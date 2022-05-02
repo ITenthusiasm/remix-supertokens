@@ -1,3 +1,11 @@
+# Remix Supertokens
+
+A repository for exemplifying/testing Remix usage with SuperTokens
+
+(Original `Remix` README is below.)
+
+---
+
 # Welcome to Remix!
 
 - [Remix Docs](https://remix.run/docs)
