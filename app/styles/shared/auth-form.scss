@@ -1,0 +1,72 @@
+body {
+  margin: 0;
+}
+
+main {
+  --label-spacing: 6px;
+  --input-spacing: 34px;
+  --input-width: 100%;
+  --input-height: 34px;
+
+  display: flex;
+  justify-items: center;
+  align-items: center;
+
+  min-height: 100vh;
+  font-size: 14px;
+
+  > form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    box-sizing: border-box;
+    width: 420px;
+    padding: 30px 50px 60px;
+    border-radius: 8px;
+    margin: 0 auto;
+
+    background-color: white;
+    box-shadow: 1px 1px 10px rgb(0 0 0 / 16%);
+    font-family: "Rubik", sans-serif;
+
+    label {
+      align-self: flex-start;
+    }
+
+    :not(label, input) {
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 2px;
+
+      font-size: 24px;
+      line-height: 40px;
+      letter-spacing: 0.58px;
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 0 0 26px;
+
+      color: #656565;
+      font-size: 14px;
+      font-weight: 300;
+      letter-spacing: 0.4px;
+    }
+
+    input {
+      width: var(--input-width);
+      height: var(--input-height);
+
+      margin-top: var(--label-spacing);
+      margin-bottom: var(--input-spacing);
+    }
+
+    button {
+      width: var(--input-width);
+      height: var(--input-height);
+    }
+  }
+}

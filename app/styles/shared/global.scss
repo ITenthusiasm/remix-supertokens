@@ -1,0 +1,67 @@
+:root {
+  --primary-color: #ff9b33;
+  --input-radius: 6px;
+}
+
+body {
+  color: #222;
+
+  :first-child {
+    margin-top: 0px;
+  }
+
+  :last-child {
+    margin-bottom: 0px;
+  }
+
+  hr {
+    border-style: none;
+    border-top: 0.3px solid #ddd;
+  }
+
+  label {
+    font-weight: 600;
+    line-height: 24px;
+
+    + input {
+      display: block;
+      box-sizing: border-box;
+      padding: 1px 25px 1px 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: var(--input-radius);
+
+      letter-spacing: 1.2px;
+      background-color: #fafafa;
+
+      &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem #ff9b3340;
+        background-color: #fafafa40;
+        outline: none;
+      }
+    }
+  }
+
+  button {
+    border: 1px solid #ee8d23;
+    border-radius: var(--input-radius);
+
+    cursor: pointer;
+    font-weight: 700;
+    color: white;
+    background-color: var(--primary-color);
+    transition: all 0.4s;
+
+    @media (hover: hover) {
+      &:hover {
+        filter: brightness(0.95);
+      }
+    }
+  }
+
+  // CSS resets
+  ul {
+    padding: 0;
+    margin: 0;
+  }
+}
