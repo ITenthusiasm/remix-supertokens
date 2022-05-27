@@ -10,18 +10,18 @@ import authFormStyles from "~/styles/shared/auth-form.css";
 import styles from "~/styles/login.css";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const toggleMode = useCallback(
-    () => setMode((mode) => (mode === "sign-in" ? "sign-up" : "sign-in")),
+    () => setMode((mode) => (mode === "signin" ? "signup" : "signin")),
     []
   );
 
   return (
     <main>
       <Form method="post">
-        <h1>Sign {mode === "sign-in" ? "In" : "Up"}</h1>
+        <h1>Sign {mode === "signin" ? "In" : "Up"}</h1>
 
-        {mode === "sign-in" ? (
+        {mode === "signin" ? (
           <h2>
             Not registered yet?{" "}
             <span className="link-like" onClick={toggleMode}>
@@ -45,10 +45,10 @@ export default function LoginPage() {
         <label htmlFor="password">Password</label>
         <input id="password" name="password" placeholder="Password" type="password" />
 
-        <input name="mode" type="hidden" value={mode.replace(/-/g, "")} />
-        <button type="submit">Sign {mode === "sign-in" ? "In" : "Up"}</button>
+        <input name="mode" type="hidden" value={mode} />
+        <button type="submit">Sign {mode === "signin" ? "In" : "Up"}</button>
 
-        {mode !== "sign-up" && (
+        {mode !== "signup" && (
           <Link className="link-like-dark" to="reset-password">
             Forgot password?
           </Link>
