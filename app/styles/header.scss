@@ -19,7 +19,7 @@ body > header {
         text-decoration: none;
       }
 
-      > .auth-button {
+      .auth-button {
         display: block;
         box-sizing: border-box;
         padding: 10px;
@@ -27,6 +27,7 @@ body > header {
         border-radius: var(--input-radius);
 
         text-align: center;
+        font-family: "Times New Roman", Times, serif;
         font-size: 20px;
         color: white;
         background-color: var(--primary-color);

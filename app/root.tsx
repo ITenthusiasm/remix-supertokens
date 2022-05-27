@@ -9,12 +9,12 @@ import {
   Scripts,
   ScrollRestoration,
   Link,
+  Form,
   useLoaderData,
   useMatches,
 } from "@remix-run/react";
 
 import { authPages } from "~/utils/constants";
-import { logout } from "~/utils/auth.client";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -57,9 +57,17 @@ export default function App() {
                 </li>
 
                 <li>
-                  <Link className="auth-button" to="login" onClick={user && logout}>
-                    {user.id ? "Logout" : "Login"}
-                  </Link>
+                  {user.id ? (
+                    <Form method="post" action="/logout">
+                      <button className="auth-button" type="submit">
+                        Logout
+                      </button>
+                    </Form>
+                  ) : (
+                    <Link className="auth-button" to="login">
+                      Login
+                    </Link>
+                  )}
                 </li>
               </ul>
             </nav>
