@@ -21,7 +21,7 @@ import globalStyles from "~/styles/shared/global.css";
 import headerStyles from "~/styles/header.css";
 
 interface LoaderData {
-  user?: { id: string };
+  user: { id?: string };
 }
 
 export const loader: LoaderFunction = ({ context }) => {
