@@ -10,7 +10,7 @@ main > form {
     letter-spacing: 0.16px;
   }
 
-  .link-like {
+  a {
     @extend %link-like-base;
     color: #0076ff;
   }

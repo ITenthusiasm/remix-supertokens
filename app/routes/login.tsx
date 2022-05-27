@@ -18,17 +18,11 @@ export default function LoginPage() {
 
         {mode === "signin" ? (
           <h2>
-            Not registered yet?{" "}
-            <Link className="link-like" to="?mode=signup">
-              Sign Up
-            </Link>
+            Not registered yet? <Link to="?mode=signup">Sign Up</Link>
           </h2>
         ) : (
           <h2>
-            Already have an account?{" "}
-            <Link className="link-like" to="">
-              Sign In
-            </Link>
+            Already have an account? <Link to="">Sign In</Link>
           </h2>
         )}
 
@@ -111,7 +105,7 @@ export const action: ActionFunction = async ({ request }) => {
     console.log(errorInfo);
 
     return json<ActionData>({
-      errors: { email: "Your auth attempt didn't work for some reason " },
+      errors: { email: "Your auth attempt didn't work for some reason" },
     });
   }
 
