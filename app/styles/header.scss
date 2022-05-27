@@ -1,0 +1,43 @@
+body > header {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid #222;
+
+  > nav > ul {
+    display: flex;
+    align-items: center;
+    column-gap: 24px;
+    list-style: none;
+
+    > li {
+      > a {
+        color: #222;
+        font-weight: bold;
+        font-size: 24px;
+        text-decoration: none;
+      }
+
+      > .auth-button {
+        display: block;
+        box-sizing: border-box;
+        padding: 10px;
+        border: 1px solid #ee8d23;
+        border-radius: var(--input-radius);
+
+        text-align: center;
+        font-size: 20px;
+        color: white;
+        background-color: var(--primary-color);
+        transition: all 0.4s;
+
+        @media (hover: hover) {
+          &:hover {
+            filter: brightness(0.95);
+          }
+        }
+      }
+    }
+  }
+}
