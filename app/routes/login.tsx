@@ -2,7 +2,6 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
-import { useState, useCallback } from "react";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -10,11 +9,7 @@ import authFormStyles from "~/styles/shared/auth-form.css";
 import styles from "~/styles/login.css";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const toggleMode = useCallback(
-    () => setMode((mode) => (mode === "signin" ? "signup" : "signin")),
-    []
-  );
+  const { mode } = useLoaderData<LoaderData>();
 
   return (
     <main>
@@ -24,16 +19,16 @@ export default function LoginPage() {
         {mode === "signin" ? (
           <h2>
             Not registered yet?{" "}
-            <span className="link-like" onClick={toggleMode}>
+            <Link className="link-like" to="?mode=signup">
               Sign Up
-            </span>
+            </Link>
           </h2>
         ) : (
           <h2>
             Already have an account?{" "}
-            <span className="link-like" onClick={toggleMode}>
+            <Link className="link-like" to="">
               Sign In
-            </span>
+            </Link>
           </h2>
         )}
 
@@ -64,12 +59,16 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: styles },
 ];
 
+interface LoaderData {
+  mode: "signin" | "signup";
+}
+
 export const loader: LoaderFunction = async ({ request, context }) => {
   if (context.user.id) return redirect("/");
 
-  const url = new URL(request.url);
-  // console.log("Search New: ", url.searchParams.has("new"));
-  return null;
+  const loginMode = new URL(request.url).searchParams.get("mode");
+  const mode = loginMode === "signup" ? "signup" : "signin";
+  return json<LoaderData>({ mode });
 };
 
 interface ActionData {
