@@ -8,6 +8,7 @@ import globalStyles from "~/styles/shared/global.css";
 import authFormStyles from "~/styles/shared/auth-form.css";
 import styles from "~/styles/login.css";
 
+/* -------------------- Browser -------------------- */
 export default function LoginPage() {
   const { mode } = useLoaderData<LoaderData>();
 
@@ -38,7 +39,7 @@ export default function LoginPage() {
         <button type="submit">Sign {mode === "signin" ? "In" : "Up"}</button>
 
         {mode !== "signup" && (
-          <Link className="link-like-dark" to="reset-password">
+          <Link className="link-like-dark" to="/reset-password">
             Forgot password?
           </Link>
         )}
@@ -53,6 +54,7 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: styles },
 ];
 
+/* -------------------- Server -------------------- */
 interface LoaderData {
   mode: "signin" | "signup";
 }
