@@ -69,9 +69,10 @@ app.all(
         purgeRequireCache();
 
         const derivedSession = await deriveSession(req, res);
-        // if (!session && !["/login", "/reset-password"].includes(req.path)) {
-        //   return res.status(401).redirect("/login");
-        // }
+        // TODO: Store public page paths in an array on the server
+        if (!derivedSession && !["/", "/login", "/reset-password"].includes(req.path)) {
+          return res.redirect("/login");
+        }
 
         const userId = derivedSession?.getUserId();
 
