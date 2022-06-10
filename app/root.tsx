@@ -56,6 +56,12 @@ export default function App() {
                   <Link to="">Home</Link>
                 </li>
 
+                {user.id && (
+                  <li>
+                    <Link to="private">Private</Link>
+                  </li>
+                )}
+
                 <li>
                   {user.id ? (
                     <Form method="post" action="/logout">

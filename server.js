@@ -71,7 +71,17 @@ app.all(
         const derivedSession = await deriveSession(req, res);
         // TODO: Store public page paths in an array on the server
         if (!derivedSession && !["/", "/login", "/reset-password"].includes(req.path)) {
-          return res.redirect("/login");
+          const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
+          const isDataRequest = url.searchParams.has("_data");
+          if (isDataRequest) url.searchParams.delete("_data");
+
+          const returnUrl = encodeURI(`${url.pathname}${url.search}`);
+          const redirectUrl = `/login?returnUrl=${returnUrl}`;
+
+          return isDataRequest
+            ? // special handling for redirect from `Remix` data requests
+              res.status(204).set("x-remix-redirect", redirectUrl).send()
+            : res.redirect(redirectUrl);
         }
 
         const userId = derivedSession?.getUserId();
