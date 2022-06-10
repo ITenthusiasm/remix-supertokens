@@ -42,11 +42,15 @@ body {
     }
   }
 
-  button {
+  button,
+  .btn {
+    display: inline-block;
+    box-sizing: border-box;
     border: 1px solid #ee8d23;
     border-radius: var(--input-radius);
 
     cursor: pointer;
+    font-size: inherit;
     font-weight: 700;
     color: white;
     background-color: var(--primary-color);

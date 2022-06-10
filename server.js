@@ -28,7 +28,12 @@ SuperTokens.init({
     apiBasePath: process.env.SUPERTOKENS_API_BASE_PATH,
   },
   recipeList: [
-    EmailPassword.init(), // Initializes signin / signup features
+    // Initializes signin / signup features
+    EmailPassword.init({
+      resetPasswordUsingTokenFeature: {
+        getResetPasswordURL: () => `${process.env.DOMAIN}/reset-password`,
+      },
+    }),
     Session.init(), // Initializes session features
   ],
 });

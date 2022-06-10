@@ -15,6 +15,77 @@ main {
   min-height: 100vh;
   font-size: 14px;
 
+  %link-like-base {
+    cursor: pointer;
+    letter-spacing: 0.16px;
+  }
+
+  a {
+    @extend %link-like-base;
+    color: #0076ff;
+  }
+
+  a.link-like-dark {
+    @extend %link-like-base;
+    color: #656565;
+    text-decoration: none;
+  }
+
+  button,
+  .btn {
+    width: var(--input-width);
+    padding: calc(0.5 * (var(--input-height) - 16px));
+    text-decoration: none;
+  }
+
+  h1 {
+    margin: 0 0 2px;
+
+    font-size: 24px;
+    line-height: 40px;
+    letter-spacing: 0.58px;
+    font-weight: 800;
+  }
+
+  h2 {
+    margin: 0 0 26px;
+
+    color: #656565;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.4px;
+  }
+
+  .error-banner {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px 18px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+
+    color: #ff1717;
+    background-color: #fff1eb;
+    font-size: inherit;
+    letter-spacing: 0.2px;
+  }
+
+  > .auth-card {
+    box-sizing: border-box;
+    width: 420px;
+    padding: 35px 50px;
+    border-radius: 8px;
+    margin: 0 auto;
+
+    background-color: white;
+    box-shadow: 1px 1px 10px rgb(0 0 0 / 16%);
+    text-align: center;
+    font-family: "Rubik", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.4px;
+    line-height: 21px;
+  }
+
   > form {
     display: flex;
     flex-direction: column;
@@ -38,35 +109,12 @@ main {
       text-align: center;
     }
 
-    h1 {
-      margin: 0 0 2px;
-
-      font-size: 24px;
-      line-height: 40px;
-      letter-spacing: 0.58px;
-      font-weight: 800;
-    }
-
-    h2 {
-      margin: 0 0 26px;
-
-      color: #656565;
-      font-size: 14px;
-      font-weight: 300;
-      letter-spacing: 0.4px;
-    }
-
     input {
       width: var(--input-width);
       height: var(--input-height);
 
       margin-top: var(--label-spacing);
       margin-bottom: var(--input-spacing);
-    }
-
-    button {
-      width: var(--input-width);
-      height: var(--input-height);
     }
   }
 }

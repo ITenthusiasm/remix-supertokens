@@ -5,22 +5,9 @@ main > form {
     margin-bottom: 16px;
   }
 
-  %link-like-base {
-    cursor: pointer;
-    letter-spacing: 0.16px;
-  }
-
-  a {
-    @extend %link-like-base;
-    color: #0076ff;
-  }
-
   a.link-like-dark {
-    @extend %link-like-base;
     display: inline-block;
     margin-top: 10px;
-
     text-decoration: none;
-    color: #656565;
   }
 }
