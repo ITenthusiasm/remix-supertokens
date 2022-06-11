@@ -39,7 +39,7 @@ export default function LoginPage() {
         <button type="submit">Sign {mode === "signin" ? "In" : "Up"}</button>
 
         {mode !== "signup" && (
-          <Link className="link-like-dark" to="/reset-password">
+          <Link className="forgot-password" to="/reset-password">
             Forgot password?
           </Link>
         )}

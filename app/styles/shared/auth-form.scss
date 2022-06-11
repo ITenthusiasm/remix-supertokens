@@ -15,19 +15,10 @@ main {
   min-height: 100vh;
   font-size: 14px;
 
-  %link-like-base {
-    cursor: pointer;
-    letter-spacing: 0.16px;
-  }
-
   a {
-    @extend %link-like-base;
+    cursor: pointer;
     color: #0076ff;
-  }
-
-  a.link-like-dark {
-    @extend %link-like-base;
-    color: #656565;
+    letter-spacing: 0.16px;
     text-decoration: none;
   }
 
@@ -87,10 +78,6 @@ main {
   }
 
   > form {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
     box-sizing: border-box;
     width: 420px;
     padding: 30px 50px 60px;
@@ -100,10 +87,6 @@ main {
     background-color: white;
     box-shadow: 1px 1px 10px rgb(0 0 0 / 16%);
     font-family: "Rubik", sans-serif;
-
-    label {
-      align-self: flex-start;
-    }
 
     :not(label, input) {
       text-align: center;

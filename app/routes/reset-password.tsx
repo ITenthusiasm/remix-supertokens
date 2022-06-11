@@ -52,7 +52,6 @@ export default function ResetPassword() {
     return (
       <main>
         <div className="auth-card">
-          {/* Link shouldn't be underlined if we're following SuperTokens styles */}
           Please check your email for the password recovery link. <Link to="">Resend</Link>
         </div>
       </main>

@@ -5,9 +5,10 @@ main > form {
     margin-bottom: 16px;
   }
 
-  a.link-like-dark {
-    display: inline-block;
-    margin-top: 10px;
-    text-decoration: none;
+  a.forgot-password {
+    display: block;
+    width: fit-content;
+    margin: 10px auto 0;
+    color: #656565;
   }
 }
