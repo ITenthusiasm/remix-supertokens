@@ -47,7 +47,7 @@ main {
     letter-spacing: 0.4px;
   }
 
-  .error-banner {
+  [role="alert"]:not(input + *) {
     box-sizing: border-box;
     width: 100%;
     padding: 10px 18px;
@@ -58,6 +58,41 @@ main {
     background-color: #fff1eb;
     font-size: inherit;
     letter-spacing: 0.2px;
+
+    transform-origin: top;
+    animation: spawn-error-banner 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    @keyframes spawn-error-banner {
+      from {
+        opacity: 0;
+        transform: rotateX(-100deg);
+      }
+
+      to {
+        opacity: 1;
+        transform: rotateX(0deg);
+      }
+    }
+  }
+
+  input + div[id][role="alert"] {
+    margin-top: calc(10px - var(--input-height));
+    margin-bottom: calc(var(--input-height) - 10px);
+
+    color: #ff1717;
+    font-weight: 400px;
+
+    animation: spawn-error-message 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    @keyframes spawn-error-message {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   }
 
   > .auth-card {
@@ -88,7 +123,7 @@ main {
     box-shadow: 1px 1px 10px rgb(0 0 0 / 16%);
     font-family: "Rubik", sans-serif;
 
-    :not(label, input) {
+    :not(label, input, input + [id][role="alert"]) {
       text-align: center;
     }
 
