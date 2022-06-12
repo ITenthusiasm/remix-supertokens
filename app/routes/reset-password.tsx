@@ -34,12 +34,35 @@ export default function ResetPassword() {
         <Form method="post" action={`${pathname}${search}`}>
           <h1>Change your password</h1>
           <h2>Enter a new password below to change your password</h2>
+          {errors?.banner && <div role="alert">{errors.banner}</div>}
 
           <label>New password</label>
-          <input name="password" type="password" placeholder="New password" />
+          <input
+            name="password"
+            type="password"
+            placeholder="New password"
+            aria-invalid={!!errors?.password}
+            aria-errormessage="password-error"
+          />
+          {!!errors?.password && (
+            <div id="password-error" role="alert">
+              {errors.password}
+            </div>
+          )}
 
           <label>Confirm password</label>
-          <input name="confirm-password" type="password" placeholder="Confirm your password" />
+          <input
+            name="confirm-password"
+            type="password"
+            placeholder="Confirm your password"
+            aria-invalid={!!errors?.["confirm-password"]}
+            aria-errormessage="confirm-password-error"
+          />
+          {!!errors?.["confirm-password"] && (
+            <div id="confirm-password-error" role="alert">
+              {errors["confirm-password"]}
+            </div>
+          )}
 
           <input name="mode" type="hidden" value={mode} />
           {token && <input name="token" type="hidden" value={token} />}
@@ -114,6 +137,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 
 type STResetResponse =
   | { status: "OK" }
+  | { status: "RESET_PASSWORD_INVALID_TOKEN_ERROR" }
   | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] };
 
 type ActionData =
@@ -121,6 +145,8 @@ type ActionData =
   | {
       banner?: string | null;
       email?: string | null;
+      password?: string | null;
+      "confirm-password"?: string | null;
     };
 
 export const action: ActionFunction = async ({ request, context }) => {
@@ -146,7 +172,7 @@ export const action: ActionFunction = async ({ request, context }) => {
       body: JSON.stringify({ formFields }),
     });
 
-    // Auth failed
+    // Email request failed
     const data: STResetResponse = await authResponse.json();
     if (data.status !== "OK") {
       if (data.status === "FIELD_ERROR") {
@@ -155,10 +181,11 @@ export const action: ActionFunction = async ({ request, context }) => {
         );
       }
 
+      console.log("SuperTokens Error Response: ", data);
       return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
     }
 
-    // Response was successful
+    // Email request succeeded
     const remixHeaders = new Headers(authResponse.headers);
     remixHeaders.set("Location", "/reset-password?mode=emailed");
 
@@ -176,11 +203,14 @@ export const action: ActionFunction = async ({ request, context }) => {
     const { password, "confirm-password": confirmPassword, token } = formData;
     const formFields = [{ id: "password", value: password }];
 
+    const errors: ActionData = {};
     if (password !== confirmPassword) {
-      return json({
-        errors: { "confirm-password": "Confirmation password doesn't match" },
-      });
+      errors["confirm-password"] = "Confirmation password doesn't match";
     }
+    if (!password) errors.password = "Field is not optional";
+    if (!confirmPassword) errors["confirm-password"] = "Field is not optional"; // Overrides first error
+
+    if (errors.password || errors["confirm-password"]) return json<ActionData>(errors);
 
     // URL Data
     const domain = process.env.DOMAIN;
@@ -193,16 +223,24 @@ export const action: ActionFunction = async ({ request, context }) => {
       body: JSON.stringify({ formFields, token, method: "token" }),
     });
 
-    if (authResponse.status !== 200) {
-      const errorInfo = await authResponse.json();
-      console.log(errorInfo);
+    // Password reset failed
+    const data: STResetResponse = await authResponse.json();
+    if (data.status !== "OK") {
+      if (data.status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
+        return json<ActionData>({ banner: "Invalid password reset token" });
+      }
 
-      return json<unknown>({
-        errors: { password: "Unable to successfully reset password" },
-      });
+      if (data.status === "FIELD_ERROR") {
+        return json<ActionData>(
+          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {})
+        );
+      }
+
+      console.log("SuperTokens Error Response: ", data);
+      return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
     }
 
-    // Response was successful
+    // Password reset succeeded
     const remixHeaders = new Headers(authResponse.headers);
     remixHeaders.set("Location", "/reset-password?mode=success");
 
@@ -216,6 +254,6 @@ export const action: ActionFunction = async ({ request, context }) => {
   }
   // Fallthrough
   else {
-    return json({ errors: { misc: "Invalid Request" } });
+    return json({ misc: "Invalid Request" });
   }
 };
