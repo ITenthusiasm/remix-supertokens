@@ -88,27 +88,6 @@ main {
     margin-bottom: 16px;
   }
 
-  input + div[id][role="alert"] {
-    margin-top: calc(10px - var(--input-height));
-    margin-bottom: calc(var(--input-height) - 10px);
-
-    color: #ff1717;
-    font-weight: 400px;
-
-    animation: spawn-error-message 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-    @keyframes spawn-error-message {
-      from {
-        opacity: 0;
-        transform: translateY(-5px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  }
-
   > .auth-card {
     box-sizing: border-box;
     width: 420px;
@@ -147,6 +126,27 @@ main {
 
       margin-top: var(--label-spacing);
       margin-bottom: var(--input-spacing);
+
+      + div[id][role="alert"] {
+        margin-top: calc(10px - var(--input-height));
+        margin-bottom: calc(var(--input-height) - 10px);
+
+        color: #ff1717;
+        font-weight: 400px;
+
+        animation: spawn-error-message 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        @keyframes spawn-error-message {
+          from {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      }
     }
   }
 }
