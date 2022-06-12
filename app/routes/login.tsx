@@ -65,7 +65,7 @@ export default function LoginPage() {
         <input name="mode" type="hidden" value={mode} />
         <button type="submit">Sign {mode === "signin" ? "In" : "Up"}</button>
 
-        {mode !== "signup" && (
+        {mode === "signin" && (
           <Link className="forgot-password" to="/reset-password">
             Forgot password?
           </Link>
