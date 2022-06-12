@@ -1,7 +1,7 @@
 // Primary Imports
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
-import { Form, Link, useLoaderData, useLocation } from "@remix-run/react";
+import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -12,6 +12,7 @@ export default function ResetPassword() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
   const { mode, token } = useLoaderData<LoaderData>();
+  const errors = useActionData<ActionData>();
 
   if (mode === "success") {
     return (
@@ -63,11 +64,22 @@ export default function ResetPassword() {
       <Form method="post">
         <h1>Reset your password</h1>
         <h2>We will send you an email to reset your password</h2>
+        {errors?.banner && <div role="alert">{errors.banner}</div>}
 
         <label htmlFor="email">Email</label>
-        <input name="email" type="email" />
-        <input name="mode" type="hidden" value={mode} />
+        <input
+          name="email"
+          type="email"
+          aria-invalid={!!errors?.email}
+          aria-errormessage="email-error"
+        />
+        {!!errors?.email && (
+          <div id="email-error" role="alert">
+            {errors.email}
+          </div>
+        )}
 
+        <input name="mode" type="hidden" value={mode} />
         <button type="submit">Email me</button>
       </Form>
     </main>
@@ -100,6 +112,17 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   return json<LoaderData>({ mode, token });
 };
 
+type STResetResponse =
+  | { status: "OK" }
+  | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] };
+
+type ActionData =
+  | undefined
+  | {
+      banner?: string | null;
+      email?: string | null;
+    };
+
 export const action: ActionFunction = async ({ request, context }) => {
   if (context.user.id) return redirect("/");
 
@@ -123,13 +146,16 @@ export const action: ActionFunction = async ({ request, context }) => {
       body: JSON.stringify({ formFields }),
     });
 
-    if (authResponse.status !== 200) {
-      const errorInfo = await authResponse.json();
-      console.log(errorInfo);
+    // Auth failed
+    const data: STResetResponse = await authResponse.json();
+    if (data.status !== "OK") {
+      if (data.status === "FIELD_ERROR") {
+        return json<ActionData>(
+          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {})
+        );
+      }
 
-      return json<unknown>({
-        errors: { email: "Your request for a password reset link failed to go through." },
-      });
+      return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
     }
 
     // Response was successful
