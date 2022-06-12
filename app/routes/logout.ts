@@ -1,7 +1,7 @@
 import { json, redirect } from "@remix-run/node";
 import type { ActionFunction } from "@remix-run/node";
 
-// Instead of letting Remix error out, redirect users who attempt to access directly `/logout`
+// Instead of letting Remix error out, redirect users who attempt to access `/logout` directly
 export const loader = () => redirect("/");
 
 interface ActionData {
