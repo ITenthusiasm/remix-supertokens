@@ -2,6 +2,7 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
+import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -94,8 +95,8 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   return json<LoaderData>({ mode });
 };
 
-/** `SuperTokens` response during signin/signup */
-type STAuthResponse =
+/** `SuperTokens` response _data_ during signin/signup */
+type SuperTokensData =
   | { status: "WRONG_CREDENTIALS_ERROR" }
   | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] }
   | { status: "OK"; user: { id: string; email: string; timeJoined: number } };
@@ -114,19 +115,15 @@ export const action: ActionFunction = async ({ request }) => {
     { id: "password", value: password },
   ];
 
-  // URL Data
-  const domain = process.env.DOMAIN;
-  const baseUrl = `${domain}${process.env.SUPERTOKENS_API_BASE_PATH}/${mode}`;
-
   // Attempt sign-in/sign-up
-  const authResponse = await fetch(baseUrl, {
+  const authResponse = await fetch(`${baseAuthUrl}/${mode}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ formFields }),
   });
 
   // Auth failed
-  const data: STAuthResponse = await authResponse.json();
+  const data: SuperTokensData = await authResponse.json();
   if (data.status !== "OK") {
     if (data.status === "WRONG_CREDENTIALS_ERROR") {
       return json<ActionData>({ banner: "Incorrect email and password combination" });
@@ -142,14 +139,12 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   // Auth succeeded
-  const remixHeaders = new Headers(authResponse.headers);
-  remixHeaders.set("Location", "/");
+  const headers = new Headers(authResponse.headers);
+  headers.set("Location", "/");
 
-  const remixResponse = new Response(authResponse.body, {
+  return new Response(authResponse.body, {
     status: 302,
     statusText: "OK",
-    headers: remixHeaders,
+    headers,
   });
-
-  return remixResponse;
 };

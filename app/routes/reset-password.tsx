@@ -2,6 +2,7 @@
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
+import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -135,7 +136,8 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   return json<LoaderData>({ mode, token });
 };
 
-type STResetResponse =
+/** `SuperTokens` response _data_ during signin/signup */
+type SuperTokensData =
   | { status: "OK" }
   | { status: "RESET_PASSWORD_INVALID_TOKEN_ERROR" }
   | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] };
@@ -161,19 +163,15 @@ export const action: ActionFunction = async ({ request, context }) => {
     const { email } = formData;
     const formFields = [{ id: "email", value: email }];
 
-    // URL Data
-    const domain = process.env.DOMAIN;
-    const baseUrl = `${domain}${process.env.SUPERTOKENS_API_BASE_PATH}/user/password/reset/token`;
-
     // Attempt to request reset email
-    const authResponse = await fetch(baseUrl, {
+    const authResponse = await fetch(`${baseAuthUrl}/user/password/reset/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ formFields }),
     });
 
     // Email request failed
-    const data: STResetResponse = await authResponse.json();
+    const data: SuperTokensData = await authResponse.json();
     if (data.status !== "OK") {
       if (data.status === "FIELD_ERROR") {
         return json<ActionData>(
@@ -186,19 +184,18 @@ export const action: ActionFunction = async ({ request, context }) => {
     }
 
     // Email request succeeded
-    const remixHeaders = new Headers(authResponse.headers);
-    remixHeaders.set("Location", "/reset-password?mode=emailed");
+    const headers = new Headers(authResponse.headers);
+    headers.set("Location", "/reset-password?mode=emailed");
 
-    const remixResponse = new Response(authResponse.body, {
+    return new Response(authResponse.body, {
       status: 302,
       statusText: "OK",
-      headers: remixHeaders,
+      headers,
     });
-
-    return remixResponse;
   }
+
   // Reset password
-  else if (mode === "attempt") {
+  if (mode === "attempt") {
     // Form Data
     const { password, "confirm-password": confirmPassword, token } = formData;
     const formFields = [{ id: "password", value: password }];
@@ -212,19 +209,15 @@ export const action: ActionFunction = async ({ request, context }) => {
 
     if (errors.password || errors["confirm-password"]) return json<ActionData>(errors);
 
-    // URL Data
-    const domain = process.env.DOMAIN;
-    const baseUrl = `${domain}${process.env.SUPERTOKENS_API_BASE_PATH}/user/password/reset`;
-
-    // Attempt to reset email
-    const authResponse = await fetch(baseUrl, {
+    // Attempt to reset password
+    const authResponse = await fetch(`${baseAuthUrl}/user/password/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ formFields, token, method: "token" }),
     });
 
     // Password reset failed
-    const data: STResetResponse = await authResponse.json();
+    const data: SuperTokensData = await authResponse.json();
     if (data.status !== "OK") {
       if (data.status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
         return json<ActionData>({ banner: "Invalid password reset token" });
@@ -241,19 +234,16 @@ export const action: ActionFunction = async ({ request, context }) => {
     }
 
     // Password reset succeeded
-    const remixHeaders = new Headers(authResponse.headers);
-    remixHeaders.set("Location", "/reset-password?mode=success");
+    const headers = new Headers(authResponse.headers);
+    headers.set("Location", "/reset-password?mode=success");
 
-    const remixResponse = new Response(authResponse.body, {
+    return new Response(authResponse.body, {
       status: 302,
       statusText: "OK",
-      headers: remixHeaders,
+      headers,
     });
+  }
 
-    return remixResponse;
-  }
   // Fallthrough
-  else {
-    return json({ misc: "Invalid Request" });
-  }
+  return json({ misc: "Invalid Request" });
 };
