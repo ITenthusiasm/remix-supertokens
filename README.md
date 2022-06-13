@@ -2,6 +2,12 @@
 
 Hello! This is my **_attempt_** at providing an example on how to use [`Remix`](https://remix.run/) with [`SuperTokens`](https://supertokens.com/). **This repository is not yet finished.** I have only recently (2022-06-13) made this repository public because now there's finally something that people can start working with.
 
+## How to Run the App
+
+1. Start the SCSS-to-CSS compiler by running `npm run sass`
+2. Start the dev server by running `npm run dev`.
+   - **Remember to add your own `.env` file to configure SuperTokens!**
+
 ## Frequently Asked Questions
 
 ### Why Use a Custom Solution Instead of the Components Provided by SuperTokens?
