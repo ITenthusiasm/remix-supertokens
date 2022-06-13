@@ -6,7 +6,7 @@ Hello! This is my **_attempt_** at providing an example on how to use [`Remix`](
 
 ### Why Use a Custom Solution Instead of the Components Provided by SuperTokens?
 
-There are a few reasons why a custom solution was used in this repoistory (instead of what SuperTokens provides for the frontend). To give just a few...
+There are a few reasons why a custom solution was used in this repository (instead of what SuperTokens provides for the frontend). To give just a few...
 
 1. **The current solutions that SuperTokens provides require JavaScript**.\* _This means that users who disable (or for some reason fail to properly receive) the JavaScript necessary for your webpage will be unable login_. Having a custom solution that doesn't require JavaScript for your application to work will improve user experience. Moreoever, it makes Remix easier to integrate with.
 2. **The current solutions that SuperTokens provides don't follow good accessibility (a11y) guidelines (yet)**.\* A custom solution allows us to make our forms more accessible while we wait for improvements. Note that I am still making improvements on this repo, myself; so suggestions are welcome. Consult the [MDN docs](https://developer.mozilla.org/) for more a11y info. Some example concerns (non-exhaustive):
