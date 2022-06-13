@@ -170,8 +170,9 @@ export const action: ActionFunction = async ({ request, context }) => {
       body: JSON.stringify({ formFields }),
     });
 
-    // Email request failed
     const data: SuperTokensData = await authResponse.json();
+
+    // Email request failed
     if (data.status !== "OK") {
       if (data.status === "FIELD_ERROR") {
         return json<ActionData>(
@@ -187,7 +188,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     const headers = new Headers(authResponse.headers);
     headers.set("Location", "/reset-password?mode=emailed");
 
-    return new Response(authResponse.body, {
+    return new Response(JSON.stringify(data), {
       status: 302,
       statusText: "OK",
       headers,
@@ -216,8 +217,9 @@ export const action: ActionFunction = async ({ request, context }) => {
       body: JSON.stringify({ formFields, token, method: "token" }),
     });
 
-    // Password reset failed
     const data: SuperTokensData = await authResponse.json();
+
+    // Password reset failed
     if (data.status !== "OK") {
       if (data.status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
         return json<ActionData>({ banner: "Invalid password reset token" });
@@ -237,7 +239,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     const headers = new Headers(authResponse.headers);
     headers.set("Location", "/reset-password?mode=success");
 
-    return new Response(authResponse.body, {
+    return new Response(JSON.stringify(data), {
       status: 302,
       statusText: "OK",
       headers,

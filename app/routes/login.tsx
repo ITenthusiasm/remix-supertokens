@@ -122,8 +122,9 @@ export const action: ActionFunction = async ({ request }) => {
     body: JSON.stringify({ formFields }),
   });
 
-  // Auth failed
   const data: SuperTokensData = await authResponse.json();
+
+  // Auth failed
   if (data.status !== "OK") {
     if (data.status === "WRONG_CREDENTIALS_ERROR") {
       return json<ActionData>({ banner: "Incorrect email and password combination" });
@@ -142,7 +143,7 @@ export const action: ActionFunction = async ({ request }) => {
   const headers = new Headers(authResponse.headers);
   headers.set("Location", "/");
 
-  return new Response(authResponse.body, {
+  return new Response(JSON.stringify(data), {
     status: 302,
     statusText: "OK",
     headers,
