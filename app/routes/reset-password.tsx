@@ -37,8 +37,9 @@ export default function ResetPassword() {
           <h2>Enter a new password below to change your password</h2>
           {errors?.banner && <div role="alert">{errors.banner}</div>}
 
-          <label>New password</label>
+          <label htmlFor="password">New password</label>
           <input
+            id="password"
             name="password"
             type="password"
             placeholder="New password"
@@ -51,8 +52,9 @@ export default function ResetPassword() {
             </div>
           )}
 
-          <label>Confirm password</label>
+          <label htmlFor="confirm-password">Confirm password</label>
           <input
+            id="confirm-password"
             name="confirm-password"
             type="password"
             placeholder="Confirm your password"
@@ -92,6 +94,7 @@ export default function ResetPassword() {
 
         <label htmlFor="email">Email</label>
         <input
+          id="email"
           name="email"
           type="email"
           aria-invalid={!!errors?.email}

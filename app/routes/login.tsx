@@ -37,6 +37,7 @@ export default function LoginPage() {
 
         <label htmlFor="email">Email</label>
         <input
+          id="email"
           name="email"
           placeholder="Email Address"
           type="email"
@@ -51,6 +52,7 @@ export default function LoginPage() {
 
         <label htmlFor="password">Password</label>
         <input
+          id="password"
           name="password"
           placeholder="Password"
           type="password"
