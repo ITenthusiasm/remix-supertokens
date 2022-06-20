@@ -127,6 +127,14 @@ main {
       margin-top: var(--label-spacing);
       margin-bottom: var(--input-spacing);
 
+      &[aria-invalid="true"] {
+        --input-border-color: #ff1717;
+
+        &:focus {
+          --input-shadow-color: #ff171740;
+        }
+      }
+
       + div[id][role="alert"] {
         margin-top: calc(10px - var(--input-height));
         margin-bottom: calc(var(--input-height) - 10px);

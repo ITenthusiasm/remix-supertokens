@@ -24,18 +24,22 @@ body {
     line-height: 24px;
 
     + input {
+      --input-border-color: #e0e0e0;
+      --input-shadow-color: #ff9b3340;
+
       display: block;
       box-sizing: border-box;
       padding: 1px 25px 1px 15px;
-      border: 1px solid #e0e0e0;
+      border: 1px solid var(--input-border-color);
       border-radius: var(--input-radius);
 
       letter-spacing: 1.2px;
       background-color: #fafafa;
 
       &:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.2rem #ff9b3340;
+        --input-border-color: var(--primary-color);
+
+        box-shadow: 0 0 0 0.2rem var(--input-shadow-color);
         background-color: #fafafa40;
         outline: none;
       }
