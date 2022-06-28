@@ -6,7 +6,13 @@ Hello! This is my **_attempt_** at providing an example on how to use [`Remix`](
 
 1. Start the SCSS-to-CSS compiler by running `npm run sass`
 2. Start the dev server by running `npm run dev`.
-   - **Remember to add your own `.env` file to configure SuperTokens!**
+   - **Remember to add your own `.env` file to configure SuperTokens!** You will need to configure:
+     - `DOMAIN`
+     - `SUPERTOKENS_CONNECTION_URI`
+     - `SUPERTOKENS_API_KEY`
+     - `SUPERTOKENS_WEBSITE_DOMAIN`
+     - `SUPERTOKENS_API_DOMAIN`
+     - `SUPERTOKENS_API_BASE_PATH`
 
 ## Frequently Asked Questions
 
@@ -14,9 +20,9 @@ Hello! This is my **_attempt_** at providing an example on how to use [`Remix`](
 
 There are a few reasons why a custom solution was used in this repository (instead of what SuperTokens provides for the frontend). To give just a few...
 
-1. **The current solutions that SuperTokens provides require JavaScript**.\* _This means that users who disable (or for some reason fail to properly receive) the JavaScript necessary for your webpage will be unable login_. Having a custom solution that doesn't require JavaScript for your application to work will improve user experience. Moreoever, it makes Remix easier to integrate with.
+1. **The current solutions that SuperTokens provides require JavaScript**.\* _This means that users who disable_ (or for some reason fail to properly receive) _the JavaScript necessary for your webpage will be unable login_. Having a custom solution that doesn't require JavaScript for your application to work will improve user experience. Moreoever, it makes Remix easier to integrate with.
 2. **The current solutions that SuperTokens provides don't follow good accessibility (a11y) guidelines (yet)**.\* A custom solution allows us to make our forms more accessible while we wait for improvements. Note that I am still making improvements on this repo, myself; so suggestions are welcome. Consult the [MDN docs](https://developer.mozilla.org/) for more a11y info. Some example concerns (non-exhaustive):
-   - Many of their HTML `input`s lack proper `label`s and use `div`s instead.
+   - Many of the HTML `input`s lack proper `label`s and use `div`s instead.
    - The `Forgot password` "link" is a regular `div` (instead of an `a`) that requires JS to work. It is **not** focusable (which means keyboard users **cannot** use it).
    - Visual users have an indicator of when they are hovering over the `SIGN IN` button, but **not** when they are focusing the button (via keyboard).
    - No ARIA attributes are used to enhance the auth forms for better accessibility (e.g., [`aria-errormessage`](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-errormessage)).
