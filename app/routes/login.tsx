@@ -144,10 +144,5 @@ export const action: ActionFunction = async ({ request }) => {
   // Auth succeeded
   const headers = new Headers(authResponse.headers);
   headers.set("Location", "/");
-
-  return new Response(JSON.stringify(data), {
-    status: 302,
-    statusText: "OK",
-    headers,
-  });
+  return new Response(null, { status: 302, statusText: "OK", headers });
 };

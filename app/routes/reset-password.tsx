@@ -190,12 +190,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     // Email request succeeded
     const headers = new Headers(authResponse.headers);
     headers.set("Location", "/reset-password?mode=emailed");
-
-    return new Response(JSON.stringify(data), {
-      status: 302,
-      statusText: "OK",
-      headers,
-    });
+    return new Response(null, { status: 302, statusText: "OK", headers });
   }
 
   // Reset password
@@ -241,12 +236,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     // Password reset succeeded
     const headers = new Headers(authResponse.headers);
     headers.set("Location", "/reset-password?mode=success");
-
-    return new Response(JSON.stringify(data), {
-      status: 302,
-      statusText: "OK",
-      headers,
-    });
+    return new Response(null, { status: 302, statusText: "OK", headers });
   }
 
   // Fallthrough

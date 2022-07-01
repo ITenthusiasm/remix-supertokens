@@ -24,10 +24,5 @@ export const action: ActionFunction = async ({ request }) => {
   // Logout succeeded
   const headers = new Headers(authResponse.headers);
   headers.set("Location", "/login");
-
-  return new Response(authResponse.body, {
-    status: 302,
-    statusText: "OK",
-    headers,
-  });
+  return new Response(null, { status: 302, statusText: "OK", headers });
 };
