@@ -132,7 +132,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   const token = searchParams.get("token");
   let mode: LoaderData["mode"];
 
-  if (searchParams.has("token")) mode = "attempt";
+  if (token) mode = "attempt";
   else if (searchParams.has("mode")) mode = searchParams.get("mode") as typeof mode;
   else mode = "request";
 

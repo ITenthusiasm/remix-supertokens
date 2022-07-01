@@ -32,7 +32,6 @@ export default function LoginPage() {
         )}
 
         <hr />
-
         {errors?.banner && <div role="alert">{errors.banner}</div>}
 
         <label htmlFor="email">Email</label>
