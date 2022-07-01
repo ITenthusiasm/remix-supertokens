@@ -20,3 +20,13 @@ You can see more about the brief conversation on Discord:
 
 - https://discord.com/channels/564830074583515176/564830075350941707/979829795619733504
 - https://discord.com/channels/564830074583515176/564830075350941707/979828827620507659
+
+### Managing Form Errors in Remix
+
+Managing form input errors in Remix is pretty great if you aren't using any progressively-enhancing JavaScript. Unfortunately, if you are using it because you need to handle client-side validation, things get a little complicated. (For this reason, consider whether or not your users **_really_** need client-side validation to enhance their experience. Facebook does not do this for its authentication forms. We have added it here just for the sake of example; but it is not necessarily practical here, and it can almost certainly be improved upon.)
+
+First, you have to consider how often you want to perform validation. If you're performing validation `oninput` for every `input`, that could mean that your app will re-render a lot (depending on the structure of your `form`). Moreoever, if your validation relies on API calls, this would also mean that you're really applying an unnecessary load to your server. Debouncing could be a potential solution... but you can also change the event that you're listening for. For example, you could use `onchange` instead. However, this would mean that the user would have to "commit" their changes by "leaving" an input before they can know whether or not the error has been fixed. You'll have to weigh these pros and cons yourself. _Ideally, for this project, we would have preferred `onchange`_.
+
+Second, you have to consider _how_ you're going to perform your validation at all. Will you build your own in-house solution or will you rely on what already exists? Making your own solution takes time... How much time do you have? Is the effort to accomplish what you need practical/worthwhile? Relying on another's solution saves time. [`React Hook Form`](https://react-hook-form.com/) is an excellent tool for building out forms in React. In my opinion, it's superior to alternatives like `Formik` for several reasons. However, you'll have to be aware of the limitations of whichever option you choose. The `React` framework itself is limited by the fact that you cannot easily add **true** `onchange` handlers to `input`s; this implicitly limits every single form-related package that uses React.
+
+We chose to go with `React Hook Form` to save time. Due to React's limitations, we had to run with `onblur`, as it's the closest thing we have to `onchange` -- just slightly more frequently called (depending on the user).

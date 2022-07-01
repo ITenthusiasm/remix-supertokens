@@ -2,6 +2,8 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
+import { useEffect } from "react";
+import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
@@ -14,11 +16,15 @@ export default function LoginPage() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
   const { mode } = useLoaderData<LoaderData>();
-  const errors = useActionData<ActionData>();
+  const serverErrors = useActionData<ActionData>();
+
+  // Manage form errors. Clear errors whenever the authentication mode changes.
+  const { register, handleSubmit, clearErrors, errors } = useFormErrors(serverErrors);
+  useEffect(clearErrors, [mode, clearErrors]);
 
   return (
     <main>
-      <Form method="post" action={`${pathname}${search}`}>
+      <Form method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
         <h1>Sign {mode === "signin" ? "In" : "Up"}</h1>
 
         {mode === "signin" ? (
@@ -32,35 +38,54 @@ export default function LoginPage() {
         )}
 
         <hr />
-        {errors?.banner && <div role="alert">{errors.banner}</div>}
+        {serverErrors?.banner && <div role="alert">{serverErrors.banner}</div>}
 
         <label htmlFor="email">Email</label>
         <input
           id="email"
-          name="email"
           placeholder="Email Address"
           type="email"
           aria-invalid={!!errors?.email}
           aria-errormessage="email-error"
+          {...register("email", {
+            async validate(value) {
+              // Check field
+              if (!value) return "Field is not optional";
+              if (!/\S+@\S+\.\S+/.test(value)) return "Email is invalid";
+              if (mode !== "signup") return;
+
+              // Check email existence for `signup`s
+              type EmailCheckData = { status: string; exists: boolean };
+              const res = await fetch(`/auth/signup/email/exists?email=${value}`);
+              const emailExists = await res.json().then((body: EmailCheckData) => body.exists);
+              if (emailExists) return "This email already exists. Please sign in instead";
+            },
+          })}
         />
         {!!errors?.email && (
           <div id="email-error" role="alert">
-            {errors.email}
+            {errors.email.message}
           </div>
         )}
 
         <label htmlFor="password">Password</label>
         <input
           id="password"
-          name="password"
           placeholder="Password"
           type="password"
           aria-invalid={!!errors?.password}
           aria-errormessage="password-error"
+          {...register("password", {
+            validate(value) {
+              if (!value) return "Field is not optional";
+              if (mode === "signup" && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value))
+                return "Password must contain at least 8 characters, including a number";
+            },
+          })}
         />
         {!!errors?.password && (
           <div id="password-error" role="alert">
-            {errors.password}
+            {errors.password.message}
           </div>
         )}
 

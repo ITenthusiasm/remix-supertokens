@@ -2,6 +2,8 @@
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
+import { useEffect } from "react";
+import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
@@ -13,7 +15,11 @@ export default function ResetPassword() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
   const { mode, token } = useLoaderData<LoaderData>();
-  const errors = useActionData<ActionData>();
+  const serverErrors = useActionData<ActionData>();
+
+  // Manage form errors. Clear errors whenever the reset-password mode changes.
+  const { register, handleSubmit, clearErrors, trigger, errors } = useFormErrors(serverErrors);
+  useEffect(clearErrors, [mode, clearErrors]);
 
   if (mode === "success") {
     return (
@@ -32,38 +38,54 @@ export default function ResetPassword() {
   if (mode === "attempt") {
     return (
       <main>
-        <Form method="post" action={`${pathname}${search}`}>
+        <Form method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
           <h1>Change your password</h1>
           <h2>Enter a new password below to change your password</h2>
-          {errors?.banner && <div role="alert">{errors.banner}</div>}
+          {serverErrors?.banner && <div role="alert">{serverErrors?.banner}</div>}
 
           <label htmlFor="password">New password</label>
           <input
             id="password"
-            name="password"
             type="password"
             placeholder="New password"
             aria-invalid={!!errors?.password}
             aria-errormessage="password-error"
+            {...register("password", {
+              validate(value) {
+                const inputName = "confirm-password";
+                const confirm = document.querySelector(`[name='${inputName}']`) as HTMLInputElement;
+                if (confirm.value) trigger(inputName);
+
+                if (!value) return "Field is not optional";
+                if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value))
+                  return "Password must contain at least 8 characters, including a number";
+              },
+            })}
           />
           {!!errors?.password && (
             <div id="password-error" role="alert">
-              {errors.password}
+              {errors.password.message}
             </div>
           )}
 
           <label htmlFor="confirm-password">Confirm password</label>
           <input
             id="confirm-password"
-            name="confirm-password"
             type="password"
             placeholder="Confirm your password"
             aria-invalid={!!errors?.["confirm-password"]}
             aria-errormessage="confirm-password-error"
+            {...register("confirm-password", {
+              required: "Field is not optional",
+              validate(value) {
+                const password = document.querySelector("[name='password']") as HTMLInputElement;
+                if (value !== password.value) return "Confirmation password doesn't match";
+              },
+            })}
           />
           {!!errors?.["confirm-password"] && (
             <div id="confirm-password-error" role="alert">
-              {errors["confirm-password"]}
+              {errors["confirm-password"].message}
             </div>
           )}
 
@@ -87,22 +109,25 @@ export default function ResetPassword() {
 
   return (
     <main>
-      <Form method="post">
+      <Form method="post" onSubmit={handleSubmit}>
         <h1>Reset your password</h1>
         <h2>We will send you an email to reset your password</h2>
-        {errors?.banner && <div role="alert">{errors.banner}</div>}
+        {serverErrors?.banner && <div role="alert">{serverErrors?.banner}</div>}
 
         <label htmlFor="email">Email</label>
         <input
           id="email"
-          name="email"
           type="email"
           aria-invalid={!!errors?.email}
           aria-errormessage="email-error"
+          {...register("email", {
+            required: "Field is not optional",
+            pattern: { value: /\S+@\S+\.\S+/, message: "Email is invalid" },
+          })}
         />
         {!!errors?.email && (
           <div id="email-error" role="alert">
-            {errors.email}
+            {errors.email.message}
           </div>
         )}
 
