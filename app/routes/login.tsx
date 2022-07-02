@@ -15,7 +15,7 @@ import styles from "~/styles/login.css";
 export default function LoginPage() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
-  const { mode } = useLoaderData<LoaderData>();
+  const { mode, baseAuthUrl } = useLoaderData<LoaderData>();
   const serverErrors = useActionData<ActionData>();
 
   // Manage form errors. Clear errors whenever the authentication mode changes.
@@ -56,7 +56,7 @@ export default function LoginPage() {
 
               // Check email existence for `signup`s
               type EmailCheckData = { status: string; exists: boolean };
-              const res = await fetch(`/auth/signup/email/exists?email=${value}`);
+              const res = await fetch(`${baseAuthUrl}/signup/email/exists?email=${value}`);
               const emailExists = await res.json().then((body: EmailCheckData) => body.exists);
               if (emailExists) return "This email already exists. Please sign in instead";
             },
@@ -111,6 +111,7 @@ export const links: LinksFunction = () => [
 /* -------------------- Server -------------------- */
 interface LoaderData {
   mode: "signin" | "signup";
+  baseAuthUrl: typeof baseAuthUrl;
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
@@ -118,7 +119,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 
   const loginMode = new URL(request.url).searchParams.get("mode");
   const mode = loginMode === "signup" ? "signup" : "signin";
-  return json<LoaderData>({ mode });
+  return json<LoaderData>({ mode, baseAuthUrl });
 };
 
 /** `SuperTokens` response _data_ during signin/signup */
