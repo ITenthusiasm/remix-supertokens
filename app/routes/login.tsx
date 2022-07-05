@@ -168,6 +168,6 @@ export const action: ActionFunction = async ({ request }) => {
 
   // Auth succeeded
   const headers = new Headers(authResponse.headers);
-  headers.set("Location", "/");
+  headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
   return new Response(null, { status: 302, statusText: "OK", headers });
 };
