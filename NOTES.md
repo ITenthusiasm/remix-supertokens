@@ -30,3 +30,17 @@ First, you have to consider how often you want to perform validation. If you're 
 Second, you have to consider _how_ you're going to perform your validation at all. Will you build your own in-house solution or will you rely on what already exists? Making your own solution takes time... How much time do you have? Is the effort to accomplish what you need practical/worthwhile? Relying on another's solution saves time. [`React Hook Form`](https://react-hook-form.com/) is an excellent tool for building out forms in React. In my opinion, it's superior to alternatives like `Formik` for several reasons. However, you'll have to be aware of the limitations of whichever option you choose. The `React` framework itself is limited by the fact that you cannot easily add **true** `onchange` handlers to `input`s; this implicitly limits every single form-related package that uses React.
 
 We chose to go with `React Hook Form` to save time. Due to React's limitations, we had to run with `onblur`, as it's the closest thing we have to `onchange` -- just slightly more frequently called (depending on the user).
+
+## SuperTokens
+
+### Refreshing Access Tokens with Browser Navigation
+
+You'll notice that across our application, we handle authentication in a way that fits the "Remix way" to enhance user experience (e.g., to allow people to login without needing JavaScript). This requires us to make API requests _from_ our server, _to_ our server (with the requests being sent to the SuperTokens API `route` we specify). This gimmick works fine, but there's a catch when it comes to session refreshing: **The Remix session refresh route must be the _exact same_ as the SuperTokens API refresh route**.
+
+According to [rishabhpoddar](https://github.com/rishabhpoddar) on [GitHub](https://github.com/ITenthusiasm/remix-supertokens/issues/1#issuecomment-1173096311):
+
+> The page the user needs to be redirected to must have the same path as the refresh token API (that is provided by us). That path is `/{apiBasePath}/session/refresh` (`/auth/session/refresh` by default). The reason for this is that the refresh token cookie is restricted to be sent to only that exact path (for security reasons)
+
+This restricts the name of our route to something less appealling, but it's not that big of a deal. Just be aware of this restriction if you change the API route you use for SuperTokens (which I would not recommend doing).
+
+Note that this use case is only significant when a token has to be refreshed via browser navigation (e.g., to take care of users who have JS disabled). If you don't need to make session refreshing possible through browser navigation, then an `/auth/session/refresh` page route isn't even necessary. (You don't need browser navigation if you don't care about users who disable or cannot use JS. In that instance, you are guaranteed to have access to the JS `fetch` API on the frontend, and you can just rely on that or on `supertokens-website`.)

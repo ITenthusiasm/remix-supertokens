@@ -73,15 +73,20 @@ app.all(
     ? async (req, res, next) => {
         purgeRequireCache();
 
-        const derivedSession = await deriveSession(req, res);
+        const { session, error } = await deriveSession(req, res);
         // TODO: Store public page paths in an array on the server
-        if (!derivedSession && !["/", "/login", "/reset-password"].includes(req.path)) {
+        if (
+          error &&
+          !["/", "/login", "/reset-password", "/auth/session/refresh"].includes(req.path)
+        ) {
+          // Craft return URL based on where the user was originally trying to go
           const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
           const isDataRequest = url.searchParams.has("_data");
           if (isDataRequest) url.searchParams.delete("_data");
 
+          const basePath = error === "UNAUTHORIZED" ? "/login" : "/auth/session/refresh";
           const returnUrl = encodeURI(`${url.pathname}${url.search}`);
-          const redirectUrl = `/login?returnUrl=${returnUrl}`;
+          const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
 
           return isDataRequest
             ? // special handling for redirect from `Remix` data requests
@@ -89,7 +94,7 @@ app.all(
             : res.redirect(redirectUrl);
         }
 
-        const userId = derivedSession?.getUserId();
+        const userId = session?.getUserId();
 
         return createRequestHandler({
           build: require(BUILD_DIR),
@@ -115,20 +120,6 @@ app.listen(port, () => {
   console.log(`Express server listening on port ${port}`);
 });
 
-/** @type {typeof Session.getSession} */
-async function deriveSession(...getSessionArgs) {
-  try {
-    const session = await Session.getSession(...getSessionArgs);
-    session.getUserId();
-    return session;
-  } catch (error) {
-    // TODO: Do we need to consider updating our SSR logic to
-    // let the user know the type of session error occurred?
-    // Possibly not?
-    return undefined;
-  }
-}
-
 function purgeRequireCache() {
   // purge require cache on requests for "server side HMR" this won't let
   // you have in-memory objects between requests in development,
@@ -139,5 +130,25 @@ function purgeRequireCache() {
     if (key.startsWith(BUILD_DIR)) {
       delete require.cache[key];
     }
+  }
+}
+
+/* -------------------- Our Own Helpers/Functions -------------------- */
+
+/**
+ * Provides the SuperTokens `session` if it exists. Otherwise, provides the SuperTokens `error`
+ * explaining why the a session could not be found.
+ * @param {Parameters<typeof Session.getSession>[0]} req
+ * @param {Parameters<typeof Session.getSession>[1]} res
+ */
+async function deriveSession(req, res) {
+  try {
+    /** @type {NonNullable<Awaited<ReturnType<typeof Session.getSession>>>} */
+    const session = await Session.getSession(req, res);
+    return { session };
+  } catch (error) {
+    /** @type {import("./app/utils/auth.server").SuperTokensSessionError} */
+    const { type } = error;
+    return { error: type };
   }
 }
