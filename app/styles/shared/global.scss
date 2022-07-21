@@ -23,7 +23,7 @@ body {
     font-weight: 600;
     line-height: 24px;
 
-    + input {
+    + input:not([type="radio"], [type="checkbox"]) {
       --input-border-color: #e0e0e0;
       --input-shadow-color: #ff9b3340;
 
