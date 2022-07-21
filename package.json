@@ -26,8 +26,7 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-hook-form": "^7.33.1",
-    "supertokens-node": "^10.0.1",
-    "supertokens-website": "^13.0.1"
+    "supertokens-node": "^10.0.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^1.6.3",
