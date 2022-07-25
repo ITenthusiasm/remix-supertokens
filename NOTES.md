@@ -16,10 +16,10 @@ Another interesting note from him on his approach:
 
 > Yeah, my example only checks for the auth cookie. I still get the user in the loader as needed. This check in "Express" is simply so I have to opt-in for public routes (all routes are protected by default). I typically don't return data in `getLoadContext` as I want to use code from `/app` folder which isn't easy to do from `server.js`
 
-You can see more about the brief conversation on Discord:
+You can see more about the brief conversation on the [Remix Discord](https://discord.com/invite/remix):
 
-- https://discord.com/channels/564830074583515176/564830075350941707/979829795619733504
-- https://discord.com/channels/564830074583515176/564830075350941707/979828827620507659
+- https://discord.com/channels/770287896669978684/771068344320786452/979816724167819314
+- https://discord.com/channels/770287896669978684/771068344320786452/979826223515582546
 
 ### Managing Form Errors in Remix
 
