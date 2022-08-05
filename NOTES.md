@@ -46,3 +46,32 @@ This restricts the name of our route to something less appealling, but it's not 
 Note that this use case is only significant when a token has to be refreshed via browser navigation (e.g., to take care of users who have JS disabled). If you don't need to make session refreshing possible through browser navigation, then an `/auth/session/refresh` page route isn't even necessary. (You don't need browser navigation if you don't care about users who disable or cannot use JS. In that instance, you are guaranteed to have access to the JS `fetch` API on the frontend, and you can just rely on that or on `supertokens-website`.)
 
 Note that this solution requires more careful attention to be given to JS users who are filling out complex forms and need to re-authenticate. However, the concerns here are no different than for JS users who occasionally refresh the page. The best/simplest solution here is `localStorage`, not necessarily `supertokens-website`.
+
+## React
+
+### `useFormLocalStorage`
+
+`useFormLocalStorage` is a _custom_ `React Hook` used to store form data in `localStorage`. (Note that `localStorage` should only be used for complex forms.) This hook relies on `actWithLocalStorage`. `actWithLocalStorage` is built on the concept of `React Action`s, which is introduced in [this Medium article](https://thomason-isaiah.medium.com/do-you-really-need-react-state-to-format-inputs-9d17f5f837fd). In `actWithLocalStorage`, we basically attach `change` handlers, which store form data in `localStorage`, to all of the target `form`'s input fields. **Note that `useFormLocalStorage` is a _minimalistic_ function that exists just for the sake of example**. It can certainly be improved upon.
+
+Here's what you **can** do with our utility:
+
+1. _Automatically store data_ for form fields in `localStorage` whenever their values `change` (as long as they each have a `name` attribute).
+   - You can see an example of this on the [`form-test` page](./app/routes/form-test.tsx)
+2. _Automatically load data_ from `localStorage` into form fields whenever the page refreshes (or is navigated to). (Again, this only works if each field has a `name` attribute.)
+3. _Clear data_ from `localStorage` (**manually**).
+
+And here are some **limitations** of our utility:
+
+1. Our approach **requires** that all necessary form fields be given a `name` attribute.
+   - This means that you cannot leverage nameless form fields. _However_, if you're using Remix, you're very likely `name`-ing all of your fields anyway. Moreover, this approach enforces a _consistent_ way to use `useFormLocalStorage`. Consistency is very beneficial. And sticking to one approach makes sense if you're working in a single codebase (as opposed to creating a flexible package to be used by anyone).
+2. Our approach does not try to address colliding field `name`s.
+   - Consider complex Form A with an input named `"my-input"`. Now consider another complex Form B with an input _also_ named `"my-input"`. Because the same key is being used in `localStorage`, forms A and B can impact and overwrite each other. You might consider modifying our Hook/Action to avoid this problem, but that requires more effort. We have foregone this effort under the assumption that such problems are unlikely to rise up as long as you minimize the amount of data you're putting in `localStorage`. (Nonetheless, to resolve this problem, you could create a mechanism that "scopes" a set of form information in `localStorage` to a specific form.)
+3. Our approach does not warn developers if a field within the target `form` does not have a `name` attribute.
+   - This is because exposing environment variables (by which we can know whether we're in `production` or `development` mode) is slightly more complex in Remix (though it is still easy), and we would _only_ want to log such warnings in `development`. We wanted to keep our function simple; in this scenario, that means foregoing warnings. Again, our utility can _certainly_ be enhnaced.
+4. Our approach _requires_ using `localStorage` (unsurprisingly). If you want to use another storing mechanism, you will have to update our Hook/Action to do so.
+   - For instance, you could update `useFormLocalStorage` to accept an optional `storage` argument that defaults to being `localStorage`. This `storage` argument would have an [`interface`](https://www.typescriptlang.org/docs/handbook/2/objects.html) that implements `setItem`, `getItem`, and `removeItem` (as well as any other methods you may need). With this approach, you could use _any_ technique for storing/clearing form information. However, this increases the complexity, so we have foregone this in our utility.
+5. The need to clear `localStorage` manually is a bit of a downer. But this one is a set of tradeoffs. The developer should have the freedom to decide when storage gets cleared (whether it's because a certain amount of time transpired, or because the form was successfully submitted, or because of whatever else). The cost of this freedom is having to call the function manually.
+   - Theoretically, you could enhance our utility by adding some kind of `"lifetime"` option. You could default this value to a certain amount of time (so that developers don't accidentally store things for all eternity) while still enabling developers to choose to store a value forever (in which case they're responsible for avoiding their own footshooting).
+6. Our solution **does not** account for `form`s that have dynamically changing fields. (i.e., If you add or remove a form field _after_ your `form` element has already mounted.)
+   - You could get around this problem by leveraging a [`MutationObserver`](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) that watches the target `form` for any added or removed fields. However, this increases complexity. And you'd have to be wise about when you add/remove Event Listeners and when you load/clear `localStorage` data in response to a DOM Node insertion/removal. This should be fairly straightforward... but again, we're aiming to keep things simpler in our example.
+   - Another option would be to take the approach of [`React Hook Form`](https://react-hook-form.com/), which attaches React `ref`s to the form fields instead of the containing `form` element. However, there are tradeoffs that you will encounter with this technique. You'll have to pick your poison wisely.
