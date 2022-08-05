@@ -57,9 +57,15 @@ export default function App() {
                 </li>
 
                 {user.id && (
-                  <li>
-                    <Link to="private">Private</Link>
-                  </li>
+                  <>
+                    <li>
+                      <Link to="private">Private</Link>
+                    </li>
+
+                    <li>
+                      <Link to="form-test">Form Test</Link>
+                    </li>
+                  </>
                 )}
 
                 <li>
