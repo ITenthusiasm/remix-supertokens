@@ -7,7 +7,6 @@ import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
-import globalStyles from "~/styles/shared/global.css";
 import authFormStyles from "~/styles/shared/auth-form.css";
 import styles from "~/styles/login.css";
 
@@ -103,7 +102,6 @@ export default function LoginPage() {
 }
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: globalStyles },
   { rel: "stylesheet", href: authFormStyles },
   { rel: "stylesheet", href: styles },
 ];

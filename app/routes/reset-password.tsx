@@ -7,7 +7,6 @@ import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
-import globalStyles from "~/styles/shared/global.css";
 import authFormStyles from "~/styles/shared/auth-form.css";
 
 /* -------------------- Browser -------------------- */
@@ -138,10 +137,7 @@ export default function ResetPassword() {
   );
 }
 
-export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: globalStyles },
-  { rel: "stylesheet", href: authFormStyles },
-];
+export const links: LinksFunction = () => [{ rel: "stylesheet", href: authFormStyles }];
 
 /* -------------------- Server -------------------- */
 interface LoaderData {
