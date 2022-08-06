@@ -1,7 +1,6 @@
 # TODO
 
 - [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.
-- [ ] Use `loader` for `logout` page instead of an `action` for simplicity. You can see `/auth/session/refresh` for an example of how to do this.
 - [ ] Remove redundant imports of `global.scss`. (Anything in `root.tsx` will always be global.)
 - [ ] Create separate `Header` component to simplify how `root.tsx` looks.
 - [ ] Improve `README.md` for developers trying to use this as an example.
