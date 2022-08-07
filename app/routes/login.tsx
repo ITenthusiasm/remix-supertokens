@@ -24,7 +24,7 @@ export default function LoginPage() {
   return (
     <main>
       <Form method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
-        <h1>Sign {mode === "signin" ? "In" : "Up"}</h1>
+        <h1>{`Sign ${mode === "signin" ? "In" : "Up"}`}</h1>
 
         {mode === "signin" ? (
           <h2>
@@ -89,7 +89,7 @@ export default function LoginPage() {
         )}
 
         <input name="mode" type="hidden" value={mode} />
-        <button type="submit">Sign {mode === "signin" ? "In" : "Up"}</button>
+        <button type="submit">{`Sign ${mode === "signin" ? "In" : "Up"}`}</button>
 
         {mode === "signin" && (
           <Link className="forgot-password" to="/reset-password">
