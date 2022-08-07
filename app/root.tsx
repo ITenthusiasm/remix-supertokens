@@ -19,22 +19,7 @@ import { authPages } from "~/utils/constants";
 // Styles
 import globalStyles from "~/styles/shared/global.css";
 
-interface LoaderData {
-  user: { id?: string };
-}
-
-export const loader: LoaderFunction = ({ context }) => {
-  return json<LoaderData>({
-    user: context.user,
-  });
-};
-
-export const meta: MetaFunction = () => ({
-  charset: "utf-8",
-  title: "New Remix App",
-  viewport: "width=device-width,initial-scale=1",
-});
-
+/* -------------------- Browser -------------------- */
 export default function App() {
   const { user } = useLoaderData<LoaderData>();
   const matches = useMatches();
@@ -65,7 +50,22 @@ export default function App() {
   );
 }
 
+export const meta: MetaFunction = () => ({
+  charset: "utf-8",
+  title: "New Remix App",
+  viewport: "width=device-width,initial-scale=1",
+});
+
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: headerStyles },
   { rel: "stylesheet", href: globalStyles },
 ];
+
+/* -------------------- Server -------------------- */
+interface LoaderData {
+  user: { id?: string };
+}
+
+export const loader: LoaderFunction = ({ context }) => {
+  return json<LoaderData>({ user: context.user });
+};
