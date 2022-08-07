@@ -13,6 +13,7 @@ This file holds a few of my suggestions for the SuperTokens team. These suggesti
 4. Add `:focus` styles for all `button`s. You can probably copy whatever the `:hover` styles are for this.
    - This is something that will help _visual_ users who are relying on their _keyboard_. Currently, there is no visual indicator that the `button`s are being focused when navigating with a keyboard.
 5. Add proper ARIA attributes to the auth forms for better a11y. (For instance, use [`aria-errormessage`](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-errormessage) for any error messages related to inputs.)
+6. `"field is not optional"` can end up being an ambiguous message for users when screen readers announce said message. Perhaps using the _field name_ (e.g., `email` or `password`) instead of the literal word `field` for these messages could be more helpful.
 
 Note: Even if the solutions that SuperTokens currently provides are dependent on JavaScript, it will still be useful to minimize the amount of JavaScript necessary on the frontend as much as possible. That way, when/if a JavaScript-free solution is crafted, it will be _much_ easier to perform the necessary migration.
 
