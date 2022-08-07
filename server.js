@@ -12,6 +12,9 @@ require("dotenv/config"); // Side effect
 
 const BUILD_DIR = path.join(process.cwd(), "build");
 
+/** @type {["/", "/login", "/reset-password", "/auth/session/refresh"]} */
+const publicPages = ["/", "/login", "/reset-password", "/auth/session/refresh"];
+
 const app = express();
 
 /* -------------------- Super Tokens -------------------- */
@@ -74,11 +77,8 @@ app.all(
         purgeRequireCache();
 
         const { session, error } = await deriveSession(req, res);
-        // TODO: Store public page paths in an array on the server
-        if (
-          error &&
-          !["/", "/login", "/reset-password", "/auth/session/refresh"].includes(req.path)
-        ) {
+
+        if (error && !publicPages.includes(req.path)) {
           // Craft return URL based on where the user was originally trying to go
           const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
           const isDataRequest = url.searchParams.has("_data");
