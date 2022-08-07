@@ -23,7 +23,6 @@ import globalStyles from "~/styles/shared/global.css";
 export default function App() {
   const { user } = useLoaderData<LoaderData>();
   const matches = useMatches();
-  matches.forEach((m) => console.log(m));
 
   return (
     <html lang="en">
