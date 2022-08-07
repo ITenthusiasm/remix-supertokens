@@ -1,18 +1,19 @@
 # Remix Supertokens
 
-Hello! This is my attempt at providing an example on how to use [`Remix`](https://remix.run/) with [`SuperTokens`](https://supertokens.com/). This repo is more or less "working". There are a few coding pieces I have to fix up, though, (like updating the server code in production mode). I have only recently (2022-06-13) made this repository public because now there's finally something that people can start working with.
+Hello! This is my attempt at providing an example on how to use [`Remix`](https://remix.run/) (an amazing tool for building SSR web applications in React) with [`SuperTokens`](https://supertokens.com/) (an open source alternative to user authentication). Note that this repository uses the `EmailPassword` recipe/approach from `SuperTokens` for its examples. However, the code here should be easily transferrable to the other authentication repices/methods that `SuperTokens` provides.
 
 ## How to Run the App
 
-1. Start the SCSS-to-CSS compiler by running `npm run sass`
+1. Start the SCSS-to-CSS compiler by running `npm run sass`.
+   - This is necessary because `Remix` only reads `CSS` files, not `SCSS` files; so `Remix` needs compiled CSS files that it can reference.
 2. Start the dev server by running `npm run dev`.
    - **Remember to add your own `.env` file to configure SuperTokens!** You will need to configure:
-     - `DOMAIN`
-     - `SUPERTOKENS_CONNECTION_URI`
+     - `DOMAIN` (e.g., `http://localhost:3000`)
+     - `SUPERTOKENS_CONNECTION_URI` (e.g., `https://try.supertokens.com`)
      - `SUPERTOKENS_API_KEY`
-     - `SUPERTOKENS_WEBSITE_DOMAIN`
-     - `SUPERTOKENS_API_DOMAIN`
-     - `SUPERTOKENS_API_BASE_PATH`
+     - `SUPERTOKENS_WEBSITE_DOMAIN` (e.g., `http://localhost:3000`)
+     - `SUPERTOKENS_API_DOMAIN` (e.g., `http://localhost:3000`)
+     - `SUPERTOKENS_API_BASE_PATH` (e.g., `/auth`)
 
 ## Frequently Asked Questions
 
