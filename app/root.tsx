@@ -21,8 +21,9 @@ import globalStyles from "~/styles/shared/global.css";
 
 /* -------------------- Browser -------------------- */
 export default function App() {
-  const { user } = useLoaderData<LoaderData>();
   const matches = useMatches();
+  const { user } = useLoaderData<LoaderData>();
+  const authenticated = !!user.id;
 
   return (
     <html lang="en">
@@ -33,10 +34,10 @@ export default function App() {
 
       <body>
         {!matches.some((m) => authPages.includes(m.pathname)) && (
-          <Header authenticated={!!user.id}>
+          <Header authenticated={authenticated}>
             <Link to="">Home</Link>
-            {!!user.id && <Link to="private">Private</Link>}
-            {!!user.id && <Link to="form-test">Form Test</Link>}
+            {authenticated && <Link to="private">Private</Link>}
+            {authenticated && <Link to="form-test">Form Test</Link>}
           </Header>
         )}
 
