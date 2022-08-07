@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useReducer } from "react";
 import useFormLocalStorage from "~/hooks/useFormLocalStorage";
 
 // Styles
-import styles from "~/styles/form-test.css";
+import styles from "~/styles/routes/form-test.css";
 
 /* -------------------- Browser -------------------- */
 type FormField = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;

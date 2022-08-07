@@ -8,7 +8,7 @@ import { baseAuthUrl } from "~/utils/auth.server";
 
 // Styles
 import authFormStyles from "~/styles/shared/auth-form.css";
-import styles from "~/styles/login.css";
+import styles from "~/styles/routes/login.css";
 
 /* -------------------- Browser -------------------- */
 export default function LoginPage() {
