@@ -26,7 +26,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.34.0",
-    "supertokens-node": "^11.0.2"
+    "supertokens-node": "^11.0.3"
   },
   "devDependencies": {
     "@remix-run/dev": "^1.6.7",
@@ -34,7 +34,7 @@
     "@types/compression": "^1.7.2",
     "@types/cors": "^2.8.12",
     "@types/morgan": "^1.9.3",
-    "@types/react": "^18.0.15",
+    "@types/react": "^18.0.16",
     "@types/react-dom": "^18.0.6",
     "dotenv": "^16.0.1",
     "eslint": "^8.21.0",
