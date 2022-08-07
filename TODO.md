@@ -1,7 +1,6 @@
 # TODO
 
 - [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.
-- [ ] Create separate `Header` component to simplify how `root.tsx` looks.
 - [ ] Improve `README.md` for developers trying to use this as an example.
   - Maybe add more documentation too?
 - [ ] Progressively _enhance_ webapp with JavaScript.
