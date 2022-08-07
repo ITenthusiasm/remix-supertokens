@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.
+- [ ] Get `server.js` to work properly in BOTH development AND production
 - [ ] Improve `README.md` for developers trying to use this as an example.
   - Maybe add more documentation too?
 - [ ] Add an example of how to get everything up an running with a PostgreSQL database.
@@ -18,3 +18,4 @@
       - [x] `/logout`
       - [x] `/private`
       - [ ] `/reset-password`
+- [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.
