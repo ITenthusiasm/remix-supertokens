@@ -72,46 +72,23 @@ app.use(errorHandler());
 
 app.all(
   "*",
+  setupRemixContext,
   process.env.NODE_ENV === "development"
-    ? async (req, res, next) => {
+    ? (req, res, next) => {
         purgeRequireCache();
 
-        const { session, error } = await deriveSession(req, res);
-
-        if (error && !publicPages.includes(req.path)) {
-          // Craft return URL based on where the user was originally trying to go
-          const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
-          const isDataRequest = url.searchParams.has("_data");
-          if (isDataRequest) url.searchParams.delete("_data");
-
-          const basePath = error === "UNAUTHORIZED" ? "/login" : "/auth/session/refresh";
-          const returnUrl = encodeURI(`${url.pathname}${url.search}`);
-          const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
-
-          return isDataRequest
-            ? // special handling for redirect from `Remix` data requests
-              res.status(204).set("x-remix-redirect", redirectUrl).send()
-            : res.redirect(redirectUrl);
-        }
-
-        const userId = session?.getUserId();
-
         return createRequestHandler({
           build: require(BUILD_DIR),
           mode: process.env.NODE_ENV,
-          getLoadContext: () => ({ user: { id: userId } }),
+          getLoadContext: () => ({ ...res.locals }),
         })(req, res, next);
       }
-    : async (req, res, next) => {
-        // PRODUCTION TEST IS NOT READY YET
-        const session = await deriveSession(req, res);
-
-        return createRequestHandler({
+    : (req, res, next) =>
+        createRequestHandler({
           build: require(BUILD_DIR),
           mode: process.env.NODE_ENV,
-          getLoadContext: () => session,
-        })(req, res, next);
-      }
+          getLoadContext: () => ({ ...res.locals }),
+        })(req, res, next)
 );
 
 const port = process.env.PORT || 3000;
@@ -134,6 +111,34 @@ function purgeRequireCache() {
 }
 
 /* -------------------- Our Own Helpers/Functions -------------------- */
+/**
+ * @type {express.RequestHandler} Derives all the data that needs to be passed to
+ * `Remix`'s `getLoadContext` and attaches it to `res.locals`. Also redirects
+ * unauthenticated and session-expired users to the proper auth route.
+ */
+async function setupRemixContext(req, res, next) {
+  const { session, error } = await deriveSession(req, res);
+
+  if (error && !publicPages.includes(req.path)) {
+    // Craft return URL based on where the user was originally trying to go
+    const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
+    const isDataRequest = url.searchParams.has("_data");
+    if (isDataRequest) url.searchParams.delete("_data");
+
+    const basePath = error === "UNAUTHORIZED" ? "/login" : "/auth/session/refresh";
+    const returnUrl = encodeURI(`${url.pathname}${url.search}`);
+    const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
+
+    return isDataRequest
+      ? // special handling for redirect from `Remix` data requests
+        res.status(204).set("x-remix-redirect", redirectUrl).send()
+      : res.redirect(redirectUrl);
+  }
+
+  const userId = session?.getUserId();
+  res.locals = { user: { id: userId } };
+  next();
+}
 
 /**
  * Provides the SuperTokens `session` if it exists. Otherwise, provides the SuperTokens `error`
