@@ -10,7 +10,7 @@ Hello! This is my attempt at providing an example on how to use [`Remix`](https:
    - **Remember to add your own `.env` file to configure SuperTokens!** You will need to configure:
      - `DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_CONNECTION_URI` (e.g., `https://try.supertokens.com`)
-     - `SUPERTOKENS_API_KEY`
+     - `SUPERTOKENS_API_KEY` (optional if your `SUPERTOKENS_CONNECTION_URI` is `https://try.supertokens.com`)
      - `SUPERTOKENS_WEBSITE_DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_API_DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_API_BASE_PATH` (e.g., `/auth`)
