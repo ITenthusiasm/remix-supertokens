@@ -2,7 +2,7 @@
   "name": "remix-template-express",
   "private": true,
   "description": "",
-  "license": "",
+  "license": "MIT",
   "sideEffects": false,
   "scripts": {
     "build": "remix build",
