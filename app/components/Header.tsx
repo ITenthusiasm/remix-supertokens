@@ -1,5 +1,5 @@
 // Primary Imports
-import { Link, Form } from "@remix-run/react";
+import { Link } from "@remix-run/react";
 import React from "react";
 import type { ReactElement, ComponentProps } from "react";
 
@@ -14,6 +14,8 @@ interface HeaderProps {
 }
 
 function Header({ authenticated = false, children }: HeaderProps): ReactElement {
+  const authAction = authenticated ? "logout" : "login";
+
   return (
     <header>
       <nav aria-label="Primary Navigation">
@@ -23,17 +25,9 @@ function Header({ authenticated = false, children }: HeaderProps): ReactElement 
           })}
 
           <li>
-            {authenticated ? (
-              <Form method="post" action="/logout">
-                <button className="auth-button" type="submit">
-                  Logout
-                </button>
-              </Form>
-            ) : (
-              <Link className="auth-button" to="/login">
-                Login
-              </Link>
-            )}
+            <Link className="auth-button" to={`/${authAction}`}>
+              {authAction}
+            </Link>
           </li>
         </ul>
       </nav>
