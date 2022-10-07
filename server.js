@@ -125,7 +125,7 @@ async function setupRemixContext(req, res, next) {
     const isDataRequest = url.searchParams.has("_data");
     if (isDataRequest) url.searchParams.delete("_data");
 
-    const basePath = error === "UNAUTHORIZED" ? "/login" : "/auth/session/refresh";
+    const basePath = error === "UNAUTHORISED" ? "/login" : "/auth/session/refresh";
     const returnUrl = encodeURI(`${url.pathname}${url.search}`);
     const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
 
