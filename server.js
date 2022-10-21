@@ -33,8 +33,29 @@ SuperTokens.init({
   recipeList: [
     // Initializes signin / signup features
     EmailPassword.init({
-      resetPasswordUsingTokenFeature: {
-        getResetPasswordURL: () => `${process.env.DOMAIN}/reset-password`,
+      emailDelivery: {
+        override: (originalImplementation) => {
+          return {
+            ...originalImplementation,
+            // Customize "Reset Password" URL
+            async sendEmail(input) {
+              if (input.type === "PASSWORD_RESET") {
+                const { SUPERTOKENS_WEBSITE_DOMAIN, SUPERTOKENS_API_BASE_PATH, DOMAIN } =
+                  process.env;
+
+                return originalImplementation.sendEmail({
+                  ...input,
+                  passwordResetLink: input.passwordResetLink.replace(
+                    `${SUPERTOKENS_WEBSITE_DOMAIN}${SUPERTOKENS_API_BASE_PATH}/reset-password`,
+                    `${DOMAIN}/reset-password`
+                  ),
+                });
+              }
+
+              return originalImplementation.sendEmail(input);
+            },
+          };
+        },
       },
     }),
     Session.init(), // Initializes session features
