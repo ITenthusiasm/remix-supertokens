@@ -217,7 +217,7 @@ export const action: ActionFunction = async ({ request, context }) => {
   // Reset password
   if (mode === "attempt") {
     // Form Data
-    const { password, "confirm-password": confirmPassword, token } = formData;
+    const { password, "confirm-password": confirmPassword, token = "" } = formData;
     const formFields = [{ id: "password", value: password }];
 
     const errors: ActionData = {};
