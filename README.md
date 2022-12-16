@@ -37,6 +37,12 @@ Depending too much on `supertokens-website` will result in an application that c
 
 I hope you find this useful! Let me know your thoughts here on GitHub or on their [Discord](https://supertokens.com/discord). :) If there are any ways that I can improve anything here, feel free to say so.
 
+### Why Is the Backend Calling Itself Sometimes?
+
+You may have noticed that the routes used for anything related to auth (e.g. `/login`, `/logout`, `/auth/session/refresh`, `/reset-password`) have `fetch` calls to itself on the backend. Why take this approach? The reasoning is due to 1) The "Remix way" of writing code and 2) The limitations of the SuperTokens API.
+
+To keep things incredibly short, the main reason is that Remix apps work best when you leverage their `Form` component and their `action` handler for managing data writes to your server. But this gets tricky with SuperTokens because their API is not compatible with this approach. Having the backend call itself is the middle ground that helps us leverage SuperTokens without throwing out all the benefits that we get from `Remix`.
+
 **(Original `Remix` README is below.)**
 
 ---
