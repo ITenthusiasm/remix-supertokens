@@ -37,7 +37,6 @@ export default function App() {
           <Header authenticated={authenticated}>
             <Link to="">Home</Link>
             {authenticated && <Link to="private">Private</Link>}
-            {authenticated && <Link to="form-test">Form Test</Link>}
           </Header>
         )}
 
