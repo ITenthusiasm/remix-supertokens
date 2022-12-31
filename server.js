@@ -40,8 +40,7 @@ SuperTokens.init({
             // Customize "Reset Password" URL
             async sendEmail(input) {
               if (input.type === "PASSWORD_RESET") {
-                const { SUPERTOKENS_WEBSITE_DOMAIN, SUPERTOKENS_API_BASE_PATH, DOMAIN } =
-                  process.env;
+                const { SUPERTOKENS_WEBSITE_DOMAIN, SUPERTOKENS_API_BASE_PATH, DOMAIN } = process.env;
 
                 return originalImplementation.sendEmail({
                   ...input,

@@ -8,9 +8,7 @@ export { default as headerStyles } from "~/styles/components/Header.css";
 
 interface HeaderProps {
   authenticated?: boolean;
-  children:
-    | (ReactElement<ComponentProps<typeof Link>> | false)
-    | (ReactElement<ComponentProps<typeof Link>> | false)[];
+  children: (ReactElement<ComponentProps<typeof Link>> | false) | (ReactElement<ComponentProps<typeof Link>> | false)[];
 }
 
 function Header({ authenticated = false, children }: HeaderProps): ReactElement {

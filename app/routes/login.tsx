@@ -127,9 +127,7 @@ type SuperTokensData =
   | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] }
   | { status: "OK"; user: { id: string; email: string; timeJoined: number } };
 
-type ActionData =
-  | undefined
-  | { banner?: string | null; email?: string | null; password?: string | null };
+type ActionData = undefined | { banner?: string | null; email?: string | null; password?: string | null };
 
 export const action: ActionFunction = async ({ request }) => {
   // Form Data
@@ -157,9 +155,7 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     if (data.status === "FIELD_ERROR") {
-      return json<ActionData>(
-        data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {})
-      );
+      return json<ActionData>(data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}));
     }
 
     return json<ActionData>({ banner: "An unexpected error occurred; please try again." });

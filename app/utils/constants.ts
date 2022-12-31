@@ -6,8 +6,4 @@ export const commonRoutes = {
 } as const;
 
 /** Page routes related to authentication. */
-export const authPages: string[] = [
-  commonRoutes.login,
-  commonRoutes.resetPassword,
-  commonRoutes.refreshSession,
-];
+export const authPages: string[] = [commonRoutes.login, commonRoutes.resetPassword, commonRoutes.refreshSession];
