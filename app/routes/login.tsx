@@ -5,6 +5,7 @@ import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-ru
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
+import { commonRoutes } from "~/utils/constants";
 
 // Styles
 import authFormStyles from "~/styles/shared/auth-form.css";
@@ -92,7 +93,7 @@ export default function LoginPage() {
         <button type="submit">{`Sign ${mode === "signin" ? "In" : "Up"}`}</button>
 
         {mode === "signin" && (
-          <Link className="forgot-password" to="/reset-password">
+          <Link className="forgot-password" to={commonRoutes.resetPassword}>
             Forgot password?
           </Link>
         )}

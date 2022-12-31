@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunction } from "@remix-run/node";
 import { baseAuthUrl } from "~/utils/auth.server";
+import { commonRoutes } from "~/utils/constants";
 
 type LoaderData = undefined | { logout?: string | null };
 
@@ -21,6 +22,6 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   // Logout succeeded
   const headers = new Headers(authResponse.headers);
-  headers.set("Location", "/login");
+  headers.set("Location", commonRoutes.login);
   return new Response(null, { status: 302, statusText: "OK", headers });
 };

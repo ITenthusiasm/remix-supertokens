@@ -1,5 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { baseAuthUrl } from "~/utils/auth.server";
+import { commonRoutes } from "~/utils/constants";
 
 // See our NOTES on Session Refreshing via Browser Navigation for more info.
 export const loader: LoaderFunction = async ({ request }) => {
@@ -15,7 +16,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     console.log("Refresh Status: ", authResponse.status);
     authResponse.json().then((body) => console.log("Refresh Error: ", body, "\n"));
 
-    return new Response(null, { status: 302, headers: { Location: "/login" } });
+    return new Response(null, { status: 302, headers: { Location: commonRoutes.login } });
   }
 
   // Refresh succeeded

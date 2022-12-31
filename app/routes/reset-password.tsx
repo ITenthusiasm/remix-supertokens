@@ -5,6 +5,7 @@ import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-ru
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
 import { baseAuthUrl } from "~/utils/auth.server";
+import { commonRoutes } from "~/utils/constants";
 
 // Styles
 import authFormStyles from "~/styles/shared/auth-form.css";
@@ -26,7 +27,7 @@ export default function ResetPassword() {
         <div className="auth-card">
           <h1>Success!</h1>
           <p>Your password has been updated successfully</p>
-          <Link className="btn" to="/login">
+          <Link className="btn" to={commonRoutes.login}>
             SIGN IN
           </Link>
         </div>
