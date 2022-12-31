@@ -17,7 +17,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   // Logout failed
   if (authResponse.status !== 200) {
     console.log("Logout failed!");
-    return json<LoaderData>({ logout: "Logout failed" });
+    return json<LoaderData>({ logout: "Logout failed" }, 400);
   }
 
   // Logout succeeded

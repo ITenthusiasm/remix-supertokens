@@ -201,12 +201,13 @@ export const action: ActionFunction = async ({ request, context }) => {
     if (data.status !== "OK") {
       if (data.status === "FIELD_ERROR") {
         return json<ActionData>(
-          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {})
+          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
+          400
         );
       }
 
       console.log("SuperTokens Error Response: ", data);
-      return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
+      return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
     }
 
     // Email request succeeded
@@ -228,7 +229,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     if (!password) errors.password = "Field is not optional";
     if (!confirmPassword) errors["confirm-password"] = "Field is not optional"; // Overrides first error
 
-    if (errors.password || errors["confirm-password"]) return json<ActionData>(errors);
+    if (errors.password || errors["confirm-password"]) return json<ActionData>(errors, 400);
 
     // Attempt to reset password
     const authResponse = await fetch(`${baseAuthUrl}/user/password/reset`, {
@@ -242,17 +243,18 @@ export const action: ActionFunction = async ({ request, context }) => {
     // Password reset failed
     if (data.status !== "OK") {
       if (data.status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
-        return json<ActionData>({ banner: "Invalid password reset token" });
+        return json<ActionData>({ banner: "Invalid password reset token" }, 401);
       }
 
       if (data.status === "FIELD_ERROR") {
         return json<ActionData>(
-          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {})
+          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
+          400
         );
       }
 
       console.log("SuperTokens Error Response: ", data);
-      return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
+      return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
     }
 
     // Password reset succeeded

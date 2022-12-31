@@ -151,14 +151,17 @@ export const action: ActionFunction = async ({ request }) => {
   // Auth failed
   if (data.status !== "OK") {
     if (data.status === "WRONG_CREDENTIALS_ERROR") {
-      return json<ActionData>({ banner: "Incorrect email and password combination" });
+      return json<ActionData>({ banner: "Incorrect email and password combination" }, 401);
     }
 
     if (data.status === "FIELD_ERROR") {
-      return json<ActionData>(data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}));
+      return json<ActionData>(
+        data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
+        400
+      );
     }
 
-    return json<ActionData>({ banner: "An unexpected error occurred; please try again." });
+    return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
   }
 
   // Auth succeeded
