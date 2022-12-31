@@ -23,7 +23,7 @@ import globalStyles from "~/styles/shared/global.css";
 export default function App() {
   const matches = useMatches();
   const { user } = useLoaderData<LoaderData>();
-  const authenticated = !!user.id;
+  const authenticated = !!user?.id;
 
   return (
     <html lang="en">
@@ -62,9 +62,9 @@ export const links: LinksFunction = () => [
 
 /* -------------------- Server -------------------- */
 interface LoaderData {
-  user: { id?: string };
+  user?: RemixContext["user"];
 }
 
 export const loader: LoaderFunction = ({ context }) => {
-  return json<LoaderData>({ user: context.user });
+  return json<LoaderData>({ user: (context as RemixContext).user });
 };

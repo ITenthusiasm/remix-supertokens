@@ -13,9 +13,9 @@ export default function Private() {
 }
 
 interface LoaderData {
-  user: Required<{ id?: string }>;
+  user: NonNullable<RemixContext["user"]>;
 }
 
 export const loader: LoaderFunction = ({ context }) => {
-  return json<LoaderData>({ user: { id: context.user.id as string } });
+  return json<LoaderData>({ user: { id: (context as RemixContext).user?.id as string } });
 };

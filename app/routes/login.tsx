@@ -114,7 +114,7 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
-  if (context.user.id) return redirect("/");
+  if ((context as RemixContext).user?.id) return redirect("/");
 
   const loginMode = new URL(request.url).searchParams.get("mode");
   const mode = loginMode === "signup" ? "signup" : "signin";
