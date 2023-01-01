@@ -4,7 +4,8 @@ import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/n
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
-import { baseAuthUrl } from "~/utils/auth.server";
+import { SuperTokensHelpers } from "~/utils/supertokens/index.server";
+import { validateEmail, validatePassword } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
 // Styles
@@ -15,7 +16,7 @@ import styles from "~/styles/routes/login.css";
 export default function LoginPage() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
-  const { mode, baseAuthUrl } = useLoaderData<LoaderData>();
+  const { mode } = useLoaderData<LoaderData>();
   const serverErrors = useActionData<ActionData>();
 
   // Manage form errors. Clear errors whenever the authentication mode changes.
@@ -50,15 +51,14 @@ export default function LoginPage() {
           {...register("email", {
             async validate(value) {
               // Check field
-              if (!value) return "Field is not optional";
-              if (!/\S+@\S+\.\S+/.test(value)) return "Email is invalid";
+              if (!value) return "Email is required";
+              if (!validateEmail(value)) return "Email is invalid";
               if (mode !== "signup") return;
 
               // Check email existence for `signup`s
-              type EmailCheckData = { status: string; exists: boolean };
-              const res = await fetch(`${baseAuthUrl}/signup/email/exists?email=${value}`);
-              const emailExists = await res.json().then((body: EmailCheckData) => body.exists);
-              if (emailExists) return "This email already exists. Please sign in instead";
+              const response = await fetch(`/api/email-exists?email=${value}`);
+              const emailExists = await response.json().then((body: boolean) => body);
+              if (emailExists) return "This email already exists. Please sign in instead.";
             },
           })}
         />
@@ -77,8 +77,8 @@ export default function LoginPage() {
           aria-errormessage="password-error"
           {...register("password", {
             validate(value) {
-              if (!value) return "Field is not optional";
-              if (mode === "signup" && !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value))
+              if (!value) return "Password is required";
+              if (mode === "signup" && !validatePassword(value))
                 return "Password must contain at least 8 characters, including a number";
             },
           })}
@@ -110,7 +110,6 @@ export const links: LinksFunction = () => [
 /* -------------------- Server -------------------- */
 interface LoaderData {
   mode: "signin" | "signup";
-  baseAuthUrl: typeof baseAuthUrl;
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
@@ -118,14 +117,8 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 
   const loginMode = new URL(request.url).searchParams.get("mode");
   const mode = loginMode === "signup" ? "signup" : "signin";
-  return json<LoaderData>({ mode, baseAuthUrl });
+  return json<LoaderData>({ mode });
 };
-
-/** `SuperTokens` response _data_ during signin/signup */
-type SuperTokensData =
-  | { status: "WRONG_CREDENTIALS_ERROR" }
-  | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] }
-  | { status: "OK"; user: { id: string; email: string; timeJoined: number } };
 
 type ActionData = undefined | { banner?: string | null; email?: string | null; password?: string | null };
 
@@ -134,38 +127,32 @@ export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData().then(Object.fromEntries);
   const { email, password, mode } = formData;
 
-  const formFields = [
-    { id: "email", value: email },
-    { id: "password", value: password },
-  ];
+  // Validate Data
+  const errors: ActionData = {};
+  if (!email) errors.email = "Email is required";
+  else if (!validateEmail(email)) errors.email = "Email is invalid";
 
-  // Attempt sign-in/sign-up
-  const authResponse = await fetch(`${baseAuthUrl}/${mode}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ formFields }),
-  });
+  if (!password) errors.password = "Password is required";
+  else if (mode === "signup" && !validatePassword(password)) {
+    errors.password = "Password must contain at least 8 characters, including a number";
+  }
 
-  const data: SuperTokensData = await authResponse.json();
+  if (errors.email || errors.password) return json<ActionData>(errors, 400);
+
+  // Attempt Sign In / Sign Up
+  const normalizedMode: LoaderData["mode"] = mode === "signup" ? "signup" : "signin";
+  const { status, responseHeaders } = await SuperTokensHelpers[normalizedMode](email, password);
 
   // Auth failed
-  if (data.status !== "OK") {
-    if (data.status === "WRONG_CREDENTIALS_ERROR") {
-      return json<ActionData>({ banner: "Incorrect email and password combination" }, 401);
-    }
+  if (status === "WRONG_CREDENTIALS_ERROR") {
+    return json<ActionData>({ banner: "Incorrect email and password combination" }, 401);
+  }
 
-    if (data.status === "FIELD_ERROR") {
-      return json<ActionData>(
-        data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
-        400
-      );
-    }
-
-    return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
+  if (status === "EMAIL_ALREADY_EXISTS_ERROR") {
+    return json<ActionData>({ email: "This email already exists. Please sign in instead." }, 400);
   }
 
   // Auth succeeded
-  const headers = new Headers(authResponse.headers);
-  headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
-  return new Response(null, { status: 302, statusText: "OK", headers });
+  responseHeaders.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
+  return new Response(null, { status: 302, statusText: "OK", headers: responseHeaders });
 };

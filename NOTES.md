@@ -35,8 +35,6 @@ We chose to go with `React Hook Form` to save time. Due to React's limitations, 
 
 ### Refreshing Access Tokens with Browser Navigation
 
-You'll notice that across our application, we handle authentication in a way that fits the "Remix way" to enhance user experience (e.g., to allow people to login without needing JavaScript). This requires us to make API requests _from_ our server, _to_ our server (with the requests being sent to the SuperTokens API `route` we specify). This gimmick works fine, but there's a catch when it comes to session refreshing: **The Remix session refresh route must be the _exact same_ as the SuperTokens API refresh route**.
-
 According to [rishabhpoddar](https://github.com/rishabhpoddar) on [GitHub](https://github.com/ITenthusiasm/remix-supertokens/issues/1#issuecomment-1173096311):
 
 > The page the user needs to be redirected to must have the same path as the refresh token API (that is provided by us). That path is `/{apiBasePath}/session/refresh` (`/auth/session/refresh` by default). The reason for this is that the refresh token cookie is restricted to be sent to only that exact path (for security reasons)

@@ -6,14 +6,13 @@ const morgan = require("morgan");
 const { createRequestHandler } = require("@remix-run/express");
 const SuperTokens = require("supertokens-node");
 const Session = require("supertokens-node/recipe/session");
-const { middleware, errorHandler } = require("supertokens-node/framework/express");
 const EmailPassword = require("supertokens-node/recipe/emailpassword");
 require("dotenv/config"); // Side effect
 
 const BUILD_DIR = path.join(process.cwd(), "build");
 
-/** @type {["/", "/login", "/reset-password", "/auth/session/refresh"]} */
-const publicPages = ["/", "/login", "/reset-password", "/auth/session/refresh"];
+/** @type {["/", "/login", "/reset-password", "/auth/session/refresh", "/api/email-exists"]} */
+const publicPages = ["/", "/login", "/reset-password", "/auth/session/refresh", "/api/email-exists"];
 
 const app = express();
 
@@ -70,7 +69,6 @@ app.use(
   })
 );
 
-app.use(middleware());
 /* -------------------- End > Super Tokens -------------------- */
 
 app.use(compression());
@@ -86,9 +84,6 @@ app.use("/build", express.static("public/build", { immutable: true, maxAge: "1y"
 app.use(express.static("public", { maxAge: "1h" }));
 
 app.use(morgan("tiny"));
-
-// SuperTokens error handling
-app.use(errorHandler());
 
 app.all(
   "*",

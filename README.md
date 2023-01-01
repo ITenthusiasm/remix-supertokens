@@ -37,11 +37,11 @@ Depending too much on `supertokens-website` will result in an application that c
 
 I hope you find this useful! Let me know your thoughts here on GitHub or on their [Discord](https://supertokens.com/discord). :) If there are any ways that I can improve anything here, feel free to say so.
 
-### Why Is the Backend Calling Itself Sometimes?
+### Why Aren't You Using the Middleware from `supertokens-node`?
 
-You may have noticed that the routes used for anything related to auth (e.g. `/login`, `/logout`, `/auth/session/refresh`, `/reset-password`) have `fetch` calls to itself on the backend. Why take this approach? The reasoning is due to 1) The "Remix way" of writing code and 2) The limitations of the SuperTokens API.
+If you've seen the comments from @Rich-Harris regarding server middleware (e.g., Express Middleware), you'll know that solutions that require you to use middleware are often restricted and will prevent you from enhancing your application with other very important features. This is especially the case if you're working with an SSR framework. And unfortunately, I have found Rich Harris's statements to be correct while working with my Remix application. There are workarounds for these problem cases that allow people to still use middleware... but those aggressive approaches often end up looking more ugly and complicated (and thus being more error-prone).
 
-To keep things incredibly short, the main reason is that Remix apps work best when you leverage their `Form` component and their `action` handler for managing data writes to your server. But this gets tricky with SuperTokens because their API is not compatible with this approach. Having the backend call itself is the middle ground that helps us leverage SuperTokens without throwing out all the benefits that we get from `Remix`.
+Avoiding the `supertokens-node` middleware ended up being _required_ for me to use HTTPS on my application _and_ get it working with high security in Cloudflare. I'll spare you the details, but there are other edge cases like these where `supertokens-node` middleware just won't work. I've suggested that the `SuperTokens` functions/methods be refactored to not require middleware, as this gives more options to developers and potentially decreases the amount of code the team has to maintain. See the [SuperTokens Utilities README](./app/utils/supertokens/README.md) for more details.
 
 **(Original `Remix` README is below.)**
 

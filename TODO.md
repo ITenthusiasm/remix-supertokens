@@ -4,15 +4,14 @@
 - [ ] Cleanup code and make it less trash. (ongoing)
   - [ ] Should we handle non-200 error responses from SuperTokens?
     - (These errors likely will not happen unless someone tries to interact with our app OUTSIDE of the UI we offer. In such cases, it may not make sense to give descriptive error messages? Our app is not an API. Remix has error boundaries... so maybe we just leave it to Remix?)
-  - [ ] Maybe add types for `Remix Context` / `User`?
-  - [ ] "Field is not optional" is a bad notification for screen readers because it is too ambiguous when the message is announced.
+  - [x] Maybe add types for `Remix Context` / `User`?
+  - [x] "Field is not optional" is a bad notification for screen readers because it is too ambiguous when the message is announced.
   - [ ] Especially scrutinize `login.tsx` and `reset-password.tsx` for cleanup.
     - Routes checklist:
-      - [x] `/auth/session/refresh`
-      - [x] `/form-test`
+      - [ ] `/auth/session/refresh`
       - [x] `/`
       - [ ] `/login`
-      - [x] `/logout`
+      - [ ] `/logout`
       - [x] `/private`
       - [ ] `/reset-password`
 - [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.

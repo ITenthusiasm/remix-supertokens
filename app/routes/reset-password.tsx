@@ -4,7 +4,8 @@ import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/n
 import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
-import { baseAuthUrl } from "~/utils/auth.server";
+import { SuperTokensHelpers } from "~/utils/supertokens/index.server";
+import { validateEmail, validatePassword, emailRegex } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
 // Styles
@@ -56,9 +57,8 @@ export default function ResetPassword() {
                 const confirm = document.querySelector(`[name='${inputName}']`) as HTMLInputElement;
                 if (confirm.value) trigger(inputName);
 
-                if (!value) return "Field is not optional";
-                if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(value))
-                  return "Password must contain at least 8 characters, including a number";
+                if (!value) return "Password is required";
+                if (!validatePassword(value)) return "Password must contain at least 8 characters, including a number";
               },
             })}
           />
@@ -76,7 +76,7 @@ export default function ResetPassword() {
             aria-invalid={!!errors?.["confirm-password"]}
             aria-errormessage="confirm-password-error"
             {...register("confirm-password", {
-              required: "Field is not optional",
+              required: "Confirmation password is required",
               validate(value) {
                 const password = document.querySelector("[name='password']") as HTMLInputElement;
                 if (value !== password.value) return "Confirmation password doesn't match";
@@ -121,8 +121,8 @@ export default function ResetPassword() {
           aria-invalid={!!errors?.email}
           aria-errormessage="email-error"
           {...register("email", {
-            required: "Field is not optional",
-            pattern: { value: /\S+@\S+\.\S+/, message: "Email is invalid" },
+            required: "Email is required",
+            pattern: { value: emailRegex, message: "Email is invalid" },
           })}
         />
         {!!errors?.email && (
@@ -161,12 +161,6 @@ export const loader: LoaderFunction = async ({ request, context }) => {
   return json<LoaderData>({ mode, token });
 };
 
-/** `SuperTokens` response _data_ during signin/signup */
-type SuperTokensData =
-  | { status: "OK" }
-  | { status: "RESET_PASSWORD_INVALID_TOKEN_ERROR" }
-  | { status: "FIELD_ERROR"; formFields: [{ id: string; error: string }] };
-
 type ActionData =
   | undefined
   | {
@@ -182,87 +176,49 @@ export const action: ActionFunction = async ({ request, context }) => {
   const formData = await request.formData().then(Object.fromEntries);
   const { mode } = formData;
 
-  // Request an email to reset password
+  // Email a "reset password" link to user
   if (mode === "request") {
     // Form Data
     const { email } = formData;
-    const formFields = [{ id: "email", value: email }];
+    if (!email) return json<ActionData>({ email: "Email is required" }, 400);
+    else if (!validateEmail(email)) return json<ActionData>({ email: "Email is invalid" }, 400);
 
-    // Attempt to request reset email
-    const authResponse = await fetch(`${baseAuthUrl}/user/password/reset/token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ formFields }),
-    });
-
-    const data: SuperTokensData = await authResponse.json();
-
-    // Email request failed
-    if (data.status !== "OK") {
-      if (data.status === "FIELD_ERROR") {
-        return json<ActionData>(
-          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
-          400
-        );
-      }
-
-      console.log("SuperTokens Error Response: ", data);
-      return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
-    }
-
-    // Email request succeeded
-    const headers = new Headers(authResponse.headers);
-    headers.set("Location", "/reset-password?mode=emailed");
+    // Email a "reset password" link (or fail silently for invalid users/emails)
+    await SuperTokensHelpers.sendPasswordResetEmail(email);
+    const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=emailed` });
     return new Response(null, { status: 302, statusText: "OK", headers });
   }
 
-  // Reset password
+  // Reset user's password
   if (mode === "attempt") {
     // Form Data
     const { password, "confirm-password": confirmPassword, token = "" } = formData;
-    const formFields = [{ id: "password", value: password }];
 
+    // Validate Data
     const errors: ActionData = {};
-    if (password !== confirmPassword) {
-      errors["confirm-password"] = "Confirmation password doesn't match";
+    if (!password) errors.password = "Password is required";
+    else if (!validatePassword(password)) {
+      errors.password = "Password must contain at least 8 characters, including a number";
     }
-    if (!password) errors.password = "Field is not optional";
-    if (!confirmPassword) errors["confirm-password"] = "Field is not optional"; // Overrides first error
+
+    if (!confirmPassword) errors["confirm-password"] = "Confirmation Password is required";
+    else if (password !== confirmPassword) errors["confirm-password"] = "Confirmation password doesn't match";
 
     if (errors.password || errors["confirm-password"]) return json<ActionData>(errors, 400);
 
-    // Attempt to reset password
-    const authResponse = await fetch(`${baseAuthUrl}/user/password/reset`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ formFields, token, method: "token" }),
-    });
+    // Validate Token
+    if (!token) return json<ActionData>({ banner: "Invalid password reset link" }, 401);
 
-    const data: SuperTokensData = await authResponse.json();
-
-    // Password reset failed
-    if (data.status !== "OK") {
-      if (data.status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
-        return json<ActionData>({ banner: "Invalid password reset token" }, 401);
-      }
-
-      if (data.status === "FIELD_ERROR") {
-        return json<ActionData>(
-          data.formFields.reduce((errors, field) => ({ ...errors, [field.id]: field.error }), {}),
-          400
-        );
-      }
-
-      console.log("SuperTokens Error Response: ", data);
-      return json<ActionData>({ banner: "An unexpected error occurred; please try again." }, 500);
+    const status = await SuperTokensHelpers.resetPassword(token, password);
+    if (status === "RESET_PASSWORD_INVALID_TOKEN_ERROR") {
+      return json<ActionData>({ banner: "Invalid password reset link" }, 401);
     }
 
     // Password reset succeeded
-    const headers = new Headers(authResponse.headers);
-    headers.set("Location", "/reset-password?mode=success");
+    const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=success` });
     return new Response(null, { status: 302, statusText: "OK", headers });
   }
 
   // Fallthrough
-  return json({ misc: "Invalid Request" });
+  return json({ error: "Invalid Request" }, 400);
 };

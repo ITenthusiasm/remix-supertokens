@@ -1,26 +1,16 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { baseAuthUrl } from "~/utils/auth.server";
+import { SuperTokensHelpers } from "~/utils/supertokens/index.server";
 import { commonRoutes } from "~/utils/constants";
 
 // See our NOTES on Session Refreshing via Browser Navigation for more info.
 export const loader: LoaderFunction = async ({ request }) => {
-  const authResponse = await fetch(
-    new Request(`${baseAuthUrl}/session/refresh`, {
-      method: "POST",
-      headers: new Headers(request.headers),
-    })
-  );
+  try {
+    const responseHeaders = await SuperTokensHelpers.refreshToken(request.headers);
 
-  // Refresh failed
-  if (authResponse.status !== 200) {
-    console.log("Refresh Status: ", authResponse.status);
-    authResponse.json().then((body) => console.log("Refresh Error: ", body, "\n"));
-
-    return new Response(null, { status: 302, headers: { Location: commonRoutes.login } });
+    responseHeaders.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
+    return new Response(null, { status: 302, statusText: "OK", headers: responseHeaders });
+  } catch (error) {
+    // TODO: Are there better ways to handle error cases?
+    return new Response(null, { status: 302, statusText: "OK", headers: { Location: commonRoutes.login } });
   }
-
-  // Refresh succeeded
-  const headers = new Headers(authResponse.headers);
-  headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
-  return new Response(null, { status: 302, statusText: "OK", headers });
 };
