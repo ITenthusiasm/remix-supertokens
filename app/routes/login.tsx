@@ -4,7 +4,7 @@ import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/n
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
-import { SuperTokensHelpers } from "~/utils/supertokens/index.server";
+import { SuperTokensHelpers, setCookiesFromMap, setHeadersFromMap } from "~/utils/supertokens/index.server";
 import { validateEmail, validatePassword } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
@@ -141,7 +141,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   // Attempt Sign In / Sign Up
   const normalizedMode: LoaderData["mode"] = mode === "signup" ? "signup" : "signin";
-  const { status, responseHeaders } = await SuperTokensHelpers[normalizedMode](email, password);
+  const { status, cookies, responseHeaders } = await SuperTokensHelpers[normalizedMode](email, password);
 
   // Auth failed
   if (status === "WRONG_CREDENTIALS_ERROR") {
@@ -153,6 +153,8 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   // Auth succeeded
-  responseHeaders.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
-  return new Response(null, { status: 302, statusText: "OK", headers: responseHeaders });
+  const headers = new Headers({ Location: new URL(request.url).searchParams.get("returnUrl") || "/" });
+  cookies.forEach(setCookiesFromMap(headers));
+  responseHeaders.forEach(setHeadersFromMap(headers));
+  return new Response(null, { status: 302, statusText: "OK", headers });
 };

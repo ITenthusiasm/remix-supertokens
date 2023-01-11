@@ -5,17 +5,21 @@ import { commonRoutes } from "~/utils/constants";
 import SuperTokensDataInput from "./SuperTokensDataInput.server";
 import SuperTokensDataOutput from "./SuperTokensDataOutput.server";
 
+export * from "./headersHelpers.server";
+
 /* -------------------- Utility Classes -------------------- */
 export const SuperTokensData = { Input: SuperTokensDataInput, Output: SuperTokensDataOutput };
 
 /* -------------------- Utility Functions -------------------- */
+type HeadersDetails = { cookies: Map<string, string>; responseHeaders: Map<string, string | string[]> };
+
 type SignInResult =
-  | { status: "WRONG_CREDENTIALS_ERROR"; responseHeaders?: undefined }
-  | { status: "OK"; responseHeaders: Headers };
+  | ({ status: "WRONG_CREDENTIALS_ERROR" } & { [K in keyof HeadersDetails]?: undefined })
+  | ({ status: "OK" } & HeadersDetails);
 
 type SignUpResult =
-  | { status: "EMAIL_ALREADY_EXISTS_ERROR"; responseHeaders?: undefined }
-  | { status: "OK"; responseHeaders: Headers };
+  | ({ status: "EMAIL_ALREADY_EXISTS_ERROR" } & { [K in keyof HeadersDetails]?: undefined })
+  | ({ status: "OK" } & HeadersDetails);
 
 type ResetPasswordStatus = Awaited<ReturnType<typeof EmailPassword["resetPasswordUsingToken"]>>["status"];
 const recipeId = "emailpassword";
@@ -28,7 +32,7 @@ export const SuperTokensHelpers = {
     const { status, user } = signinResult;
     const output = new SuperTokensData.Output();
     await Session.createNewSession(output, user.id);
-    return { status, responseHeaders: output.responseHeaders };
+    return { status, cookies: output.cookies, responseHeaders: output.responseHeaders };
   },
 
   async signup(email: string, password: string): Promise<SignUpResult> {
@@ -38,7 +42,7 @@ export const SuperTokensHelpers = {
     const { status, user } = signupResult;
     const output = new SuperTokensData.Output();
     await Session.createNewSession(output, user.id);
-    return { status, responseHeaders: output.responseHeaders };
+    return { status, cookies: output.cookies, responseHeaders: output.responseHeaders };
   },
 
   async emailExists(email: string): Promise<boolean> {
@@ -49,24 +53,24 @@ export const SuperTokensHelpers = {
    * @param headers The headers from the request object
    * @param method The HTTP method of the request
    */
-  async logout(headers: Headers, method: HTTPMethod): Promise<Headers> {
+  async logout(headers: Headers, method: HTTPMethod): Promise<HeadersDetails> {
     const input = new SuperTokensData.Input({ headers, method });
     const output = new SuperTokensData.Output();
 
     const session = await Session.getSession(input, output, { sessionRequired: false });
     await session?.revokeSession(); // This implicitly clears the auth cookies from `output`
-    return output.responseHeaders;
+    return { cookies: output.cookies, responseHeaders: output.responseHeaders };
   },
 
   /**
    * @param headers The headers from the request object
    */
-  async refreshToken(headers: Headers): Promise<Headers> {
+  async refreshToken(headers: Headers): Promise<HeadersDetails> {
     const input = new SuperTokensData.Input({ headers });
     const output = new SuperTokensData.Output();
 
     await Session.refreshSession(input, output);
-    return output.responseHeaders;
+    return { cookies: output.cookies, responseHeaders: output.responseHeaders };
   },
 
   // NOTE: Fails silently for unknown emails intentionally
