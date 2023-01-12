@@ -54,7 +54,7 @@ export const SuperTokensHelpers = {
    * @param method The HTTP method of the request
    */
   async logout(headers: Headers, method: HTTPMethod): Promise<HeadersDetails> {
-    const input = new SuperTokensData.Input({ headers, method });
+    const input = new SuperTokensData.Input({ headers: new Map(headers), method });
     const output = new SuperTokensData.Output();
 
     const session = await Session.getSession(input, output, { sessionRequired: false });
@@ -66,7 +66,7 @@ export const SuperTokensHelpers = {
    * @param headers The headers from the request object
    */
   async refreshToken(headers: Headers): Promise<HeadersDetails> {
-    const input = new SuperTokensData.Input({ headers });
+    const input = new SuperTokensData.Input({ headers: new Map(headers) });
     const output = new SuperTokensData.Output();
 
     await Session.refreshSession(input, output);

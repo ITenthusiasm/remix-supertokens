@@ -15,7 +15,7 @@ interface RequestData {
   /** The HTTP method of the request */
   method?: HTTPMethod;
   /** The headers belonging to the request */
-  headers: Headers;
+  headers: Map<string, string>;
 }
 
 /**
@@ -31,14 +31,14 @@ interface RequestData {
  */
 class SuperTokensDataInput {
   // SuperTokens Hijacks
-  #wrapperUsed: true = true;
+  #wrapperUsed = true as const;
 
   // Custom Data
-  #body?: unknown;
+  #body?: RequestData["body"];
   #query?: URLSearchParams;
-  #url?: string;
-  #method?: HTTPMethod;
-  #headers: Headers;
+  #url?: RequestData["url"];
+  #method?: RequestData["method"];
+  #headers: RequestData["headers"];
   #cookies = new Map<string, string>();
 
   /**
@@ -49,18 +49,18 @@ class SuperTokensDataInput {
    * @param requestData Object representing the minimum amount of data that `SuperTokens` requires to function.
    */
   constructor({ body, url, method, headers }: RequestData) {
-    const COOKIE_HEADER = "Cookie";
+    const COOKIE_HEADER = "cookie";
 
     this.#body = body;
     if (url) this.#query = new URL(url).searchParams;
     this.#method = method;
     this.#url = url;
 
-    this.#headers = new Headers(headers);
-    // Set local cookies `Map` based on request `Headers`
+    this.#headers = new Map(headers);
+    // Derive request cookies from the request headers
     const cookiePairs = this.#headers.get(COOKIE_HEADER)?.split("; ");
 
-    if (cookiePairs) {
+    if (cookiePairs?.length) {
       cookiePairs.forEach((pair) => {
         const [key, value] = pair.split("=");
         this.#cookies.set(key, value);
@@ -101,7 +101,7 @@ class SuperTokensDataInput {
 
   /** Internal method used strictly for communicating with SuperTokens */
   getHeaderValue(key: string): string | undefined {
-    const headerValue = this.#headers?.get(key);
+    const headerValue = this.#headers.get(key);
     if (headerValue == null) return undefined;
 
     // Accounts for headers with multiple values
