@@ -2,6 +2,10 @@
 
 Hello! This is my attempt at providing an example on how to use [`Remix`](https://remix.run/) (an amazing tool for building SSR web applications in React) with [`SuperTokens`](https://supertokens.com/) (an open source alternative to user authentication). Note that this repository uses the `EmailPassword` recipe/approach from `SuperTokens` for its examples. However, the code here should be easily transferrable to the other authentication repices/methods that `SuperTokens` provides.
 
+Note that this application takes an SSR-only approach for two reasons: 1) Better security (big plus) and 2) Easier management (arguably).
+
+If there are any questions, concerns, or ideas for improvement, feel free to reach out to me in the [SuperTokens Discord](https://supertokens.com/discord) or the [Remix Discord](https://rmx.as/discord). (Technically either one works. But if your question is more oriented towards SuperTokens, you should probably ping me on the SuperTokens Discord.)
+
 ## How to Run the App
 
 1. Start the SCSS-to-CSS compiler by running `npm run sass`.
