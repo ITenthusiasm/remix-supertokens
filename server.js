@@ -7,13 +7,18 @@ const { createRequestHandler } = require("@remix-run/express");
 const SuperTokens = require("supertokens-node");
 const Session = require("supertokens-node/recipe/session");
 const EmailPassword = require("supertokens-node/recipe/emailpassword");
+const { default: SuperTokensError } = require("supertokens-node/lib/build/error");
+const { serialize, parse } = require("cookie");
 require("dotenv/config"); // Side effect
+const { commonRoutes } = require("./app/utils/constants");
+const {
+  authCookieNames,
+  deleteCookieSettings,
+  deleteRefreshSettings,
+} = require("./app/utils/supertokens/cookieHelpers.server");
 
 const BUILD_DIR = path.join(process.cwd(), "build");
-
-/** @type {["/", "/login", "/reset-password", "/auth/session/refresh", "/api/email-exists"]} */
-const publicPages = ["/", "/login", "/reset-password", "/auth/session/refresh", "/api/email-exists"];
-
+const publicPages = ["/", commonRoutes.login, commonRoutes.resetPassword, commonRoutes.emailExists];
 const app = express();
 
 /* -------------------- Super Tokens -------------------- */
@@ -30,32 +35,7 @@ SuperTokens.init({
     apiBasePath: process.env.SUPERTOKENS_API_BASE_PATH,
   },
   recipeList: [
-    // Initializes signin / signup features
-    EmailPassword.init({
-      emailDelivery: {
-        override: (originalImplementation) => {
-          return {
-            ...originalImplementation,
-            // Customize "Reset Password" URL
-            async sendEmail(input) {
-              if (input.type === "PASSWORD_RESET") {
-                const { SUPERTOKENS_WEBSITE_DOMAIN, SUPERTOKENS_API_BASE_PATH, DOMAIN } = process.env;
-
-                return originalImplementation.sendEmail({
-                  ...input,
-                  passwordResetLink: input.passwordResetLink.replace(
-                    `${SUPERTOKENS_WEBSITE_DOMAIN}${SUPERTOKENS_API_BASE_PATH}/reset-password`,
-                    `${DOMAIN}/reset-password`
-                  ),
-                });
-              }
-
-              return originalImplementation.sendEmail(input);
-            },
-          };
-        },
-      },
-    }),
+    EmailPassword.init(), // Initializes signin / signup features
     Session.init(), // Initializes session features
   ],
 });
@@ -132,43 +112,51 @@ function purgeRequireCache() {
  * unauthenticated and session-expired users to the proper auth route.
  */
 async function setupRemixContext(req, res, next) {
-  const { session, error } = await deriveSession(req, res);
+  try {
+    const cookies = parse(req.headers.cookie ?? "");
+    const accessToken = cookies[authCookieNames.access] ?? "";
+    const antiCsrfToken = cookies[authCookieNames.csrf];
+    const session = await Session.getSessionWithoutRequestResponse(accessToken, antiCsrfToken);
+    const userId = session.getUserId();
 
-  if (error && !publicPages.includes(req.path)) {
-    // Craft return URL based on where the user was originally trying to go
+    res.locals = { user: { id: userId } };
+    return next();
+  } catch (error) {
+    if (!SuperTokensError.isErrorFromSuperTokens(error)) return res.status(500).send("An unexpected error occurred");
+    // URL Details
     const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
     const isDataRequest = url.searchParams.has("_data");
     if (isDataRequest) url.searchParams.delete("_data");
 
-    const basePath = error === "UNAUTHORISED" ? "/login" : "/auth/session/refresh";
+    const userNeedsSessionRefresh = error.type === Session.Error.TRY_REFRESH_TOKEN;
+    const requestAllowed =
+      publicPages.includes(url.pathname) || (userNeedsSessionRefresh && url.pathname === commonRoutes.refreshSession);
+
+    if (requestAllowed) {
+      res.locals = { user: {} };
+      return next();
+    }
+
+    const basePath = userNeedsSessionRefresh ? commonRoutes.refreshSession : commonRoutes.login;
     const returnUrl = encodeURI(`${url.pathname}${url.search}`);
-    const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
+    const redirectUrl =
+      url.pathname === commonRoutes.refreshSession || url.pathname === "/logout"
+        ? basePath
+        : `${basePath}?returnUrl=${returnUrl}`;
 
+    // Delete the user's tokens if they don't need to attempt a token refresh.
+    if (!userNeedsSessionRefresh) {
+      res.setHeader("Set-Cookie", [
+        serialize(authCookieNames.access, "", deleteCookieSettings),
+        serialize(authCookieNames.refresh, "", deleteRefreshSettings),
+        serialize(authCookieNames.csrf, "", deleteCookieSettings),
+      ]);
+    }
+
+    // Redirect the user to the proper auth page.
     return isDataRequest
-      ? // special handling for redirect from `Remix` data requests
-        res.status(204).set("x-remix-redirect", redirectUrl).send()
-      : res.redirect(redirectUrl);
-  }
-
-  const userId = session?.getUserId();
-  res.locals = { user: { id: userId } };
-  next();
-}
-
-/**
- * Provides the SuperTokens `session` if it exists. Otherwise, provides the SuperTokens `error`
- * explaining why the a session could not be found.
- * @param {Parameters<typeof Session.getSession>[0]} req
- * @param {Parameters<typeof Session.getSession>[1]} res
- */
-async function deriveSession(req, res) {
-  try {
-    /** @type {NonNullable<Awaited<ReturnType<typeof Session.getSession>>>} */
-    const session = await Session.getSession(req, res);
-    return { session };
-  } catch (error) {
-    /** @type {import("./app/utils/auth.server").SuperTokensSessionError} */
-    const { type } = error;
-    return { error: type };
+      ? // Special handling for redirects from `Remix` data requests
+        res.status(204).setHeader("x-remix-redirect", redirectUrl).send()
+      : res.redirect(userNeedsSessionRefresh ? 307 : 303, redirectUrl);
   }
 }

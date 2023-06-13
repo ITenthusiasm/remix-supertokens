@@ -1,19 +1,19 @@
-import type { LoaderFunction } from "@remix-run/node";
-import { SuperTokensHelpers, setCookiesFromMap, setHeadersFromMap } from "~/utils/supertokens/index.server";
+import type { LoaderFunction, ActionFunction } from "@remix-run/node";
+import { parse } from "cookie";
+import SuperTokensHelpers from "~/utils/supertokens/index.server";
+import { authCookieNames, createHeadersFromTokens } from "~/utils/supertokens/cookieHelpers.server";
 import { commonRoutes } from "~/utils/constants";
 
-// See our NOTES on Session Refreshing via Browser Navigation for more info.
-// TODO: Do we need to handle error cases?
 export const loader: LoaderFunction = async ({ request }) => {
-  try {
-    const { cookies, responseHeaders } = await SuperTokensHelpers.refreshToken(request.headers);
+  const cookies = parse(request.headers.get("Cookie") ?? "");
+  const refreshToken = cookies[authCookieNames.refresh] ?? "";
+  const antiCsrfToken = cookies[authCookieNames.csrf];
+  const newTokens = await SuperTokensHelpers.refreshToken({ refreshToken, antiCsrfToken });
 
-    const headers = new Headers({ Location: new URL(request.url).searchParams.get("returnUrl") || "/" });
-    cookies.forEach(setCookiesFromMap(headers));
-    responseHeaders.forEach(setHeadersFromMap(headers));
-    return new Response(null, { status: 302, statusText: "OK", headers });
-  } catch (error) {
-    // TODO: Are there better ways to handle error cases?
-    return new Response(null, { status: 302, statusText: "OK", headers: { Location: commonRoutes.login } });
-  }
+  const url = new URL(request.url);
+  const headers = createHeadersFromTokens(newTokens);
+  headers.set("Location", newTokens.accessToken ? url.searchParams.get("returnUrl") || "/" : commonRoutes.login);
+  return new Response(null, { status: 307, headers });
 };
+
+export const action = loader as ActionFunction;

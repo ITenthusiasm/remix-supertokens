@@ -4,7 +4,7 @@ import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/n
 import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
-import { SuperTokensHelpers } from "~/utils/supertokens/index.server";
+import SuperTokensHelpers from "~/utils/supertokens/index.server";
 import { validateEmail, validatePassword, emailRegex } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
@@ -148,7 +148,7 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/");
+  if ((context as RemixContext).user?.id) return redirect("/", 303);
 
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
@@ -171,7 +171,7 @@ type ActionData =
     };
 
 export const action: ActionFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/");
+  if ((context as RemixContext).user?.id) return redirect("/", 303);
 
   const formData = await request.formData().then(Object.fromEntries);
   const { mode } = formData;
@@ -186,7 +186,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     // Email a "reset password" link (or fail silently for invalid users/emails)
     await SuperTokensHelpers.sendPasswordResetEmail(email);
     const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=emailed` });
-    return new Response(null, { status: 302, statusText: "OK", headers });
+    return new Response(null, { status: 303, statusText: "OK", headers });
   }
 
   // Reset user's password
@@ -216,7 +216,7 @@ export const action: ActionFunction = async ({ request, context }) => {
 
     // Password reset succeeded
     const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=success` });
-    return new Response(null, { status: 302, statusText: "OK", headers });
+    return new Response(null, { status: 303, statusText: "OK", headers });
   }
 
   // Fallthrough

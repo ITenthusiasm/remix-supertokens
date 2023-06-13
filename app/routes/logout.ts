@@ -1,16 +1,16 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { SuperTokensHelpers, setCookiesFromMap, setHeadersFromMap } from "~/utils/supertokens/index.server";
+import { parse } from "cookie";
+import SuperTokensHelpers from "~/utils/supertokens/index.server";
+import { authCookieNames, createHeadersFromTokens } from "~/utils/supertokens/cookieHelpers.server";
 import { commonRoutes } from "~/utils/constants";
 
-// TODO: Do we need to handle error cases?
 export const loader: LoaderFunction = async ({ request }) => {
-  const { cookies, responseHeaders } = await SuperTokensHelpers.logout(
-    request.headers,
-    request.method.toLowerCase() as "get"
-  );
+  const cookies = parse(request.headers.get("Cookie") ?? "");
+  const accessToken = cookies[authCookieNames.access];
+  const antiCsrfToken = cookies[authCookieNames.csrf];
+  await SuperTokensHelpers.logout({ accessToken, antiCsrfToken });
 
-  const headers = new Headers({ Location: commonRoutes.login });
-  cookies.forEach(setCookiesFromMap(headers));
-  responseHeaders.forEach(setHeadersFromMap(headers));
-  return new Response(null, { status: 302, statusText: "OK", headers });
+  const headers = createHeadersFromTokens({});
+  headers.set("Location", commonRoutes.login);
+  return new Response(null, { status: 303, statusText: "OK", headers });
 };

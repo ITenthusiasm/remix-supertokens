@@ -4,7 +4,8 @@ import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/n
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
 import { useEffect } from "react";
 import useFormErrors from "~/hooks/useFormErrors";
-import { SuperTokensHelpers, setCookiesFromMap, setHeadersFromMap } from "~/utils/supertokens/index.server";
+import SuperTokensHelpers from "~/utils/supertokens/index.server";
+import { createHeadersFromTokens } from "~/utils/supertokens/cookieHelpers.server";
 import { validateEmail, validatePassword } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
@@ -113,7 +114,7 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/");
+  if ((context as RemixContext).user?.id) return redirect("/", 303);
 
   const loginMode = new URL(request.url).searchParams.get("mode");
   const mode = loginMode === "signup" ? "signup" : "signin";
@@ -122,7 +123,9 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 
 type ActionData = undefined | { banner?: string | null; email?: string | null; password?: string | null };
 
-export const action: ActionFunction = async ({ request }) => {
+export const action: ActionFunction = async ({ request, context }) => {
+  if ((context as RemixContext).user?.id) return redirect("/", 303);
+
   // Form Data
   const formData = await request.formData().then(Object.fromEntries);
   const { email, password, mode } = formData;
@@ -141,7 +144,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   // Attempt Sign In / Sign Up
   const normalizedMode: LoaderData["mode"] = mode === "signup" ? "signup" : "signin";
-  const { status, cookies, responseHeaders } = await SuperTokensHelpers[normalizedMode](email, password);
+  const { status, tokens } = await SuperTokensHelpers[normalizedMode](email, password);
 
   // Auth failed
   if (status === "WRONG_CREDENTIALS_ERROR") {
@@ -153,8 +156,7 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   // Auth succeeded
-  const headers = new Headers({ Location: new URL(request.url).searchParams.get("returnUrl") || "/" });
-  cookies.forEach(setCookiesFromMap(headers));
-  responseHeaders.forEach(setHeadersFromMap(headers));
-  return new Response(null, { status: 302, statusText: "OK", headers });
+  const headers = createHeadersFromTokens(tokens);
+  headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
+  return new Response(null, { status: 303, statusText: "OK", headers });
 };
