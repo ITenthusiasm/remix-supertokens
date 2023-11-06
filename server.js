@@ -7,7 +7,6 @@ const { createRequestHandler } = require("@remix-run/express");
 const SuperTokens = require("supertokens-node");
 const Session = require("supertokens-node/recipe/session");
 const EmailPassword = require("supertokens-node/recipe/emailpassword");
-const { default: SuperTokensError } = require("supertokens-node/lib/build/error");
 const { serialize, parse } = require("cookie");
 require("dotenv/config"); // Side effect
 const { commonRoutes } = require("./app/utils/constants");
@@ -122,7 +121,7 @@ async function setupRemixContext(req, res, next) {
     res.locals = { user: { id: userId } };
     return next();
   } catch (error) {
-    if (!SuperTokensError.isErrorFromSuperTokens(error)) return res.status(500).send("An unexpected error occurred");
+    if (!Session.Error.isErrorFromSuperTokens(error)) return res.status(500).send("An unexpected error occurred");
     // URL Details
     const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
     const isDataRequest = url.searchParams.has("_data");
