@@ -2,8 +2,9 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
-import { useEffect } from "react";
-import useFormErrors from "~/hooks/useFormErrors";
+import { useEffect, useMemo } from "react";
+import { useFormValidityObserver } from "@form-observer/react";
+import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
 import { createHeadersFromTokens } from "~/utils/supertokens/cookieHelpers.server";
 import { validateEmail, validatePassword } from "~/utils/validation";
@@ -18,15 +19,26 @@ export default function LoginPage() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
   const { mode } = useLoaderData<LoaderData>();
-  const serverErrors = useActionData<ActionData>();
+  const errors = useActionData<ActionData>();
 
-  // Manage form errors. Clear errors whenever the authentication mode changes.
-  const { register, handleSubmit, clearErrors, errors } = useFormErrors(serverErrors);
-  useEffect(clearErrors, [mode, clearErrors]);
+  // Manage form errors.
+  const { autoObserve, configure, setFieldError, clearFieldError } = useFormValidityObserver("focusout");
+  const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
+
+  useEffect(() => {
+    if (!errors) return;
+    Object.entries(errors).forEach(([name, error]) => setFieldError(name, error as string));
+  }, [errors, setFieldError]);
+
+  // Clear errors whenever the authentication mode changes.
+  useEffect(() => {
+    clearFieldError("email");
+    clearFieldError("password");
+  }, [mode, clearFieldError]);
 
   return (
     <main>
-      <Form method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
+      <Form ref={useMemo(autoObserve, [autoObserve])} method="post" action={`${pathname}${search}`}>
         <h1>{`Sign ${mode === "signin" ? "In" : "Up"}`}</h1>
 
         {mode === "signin" ? (
@@ -40,34 +52,30 @@ export default function LoginPage() {
         )}
 
         <hr />
-        {serverErrors?.banner && <div role="alert">{serverErrors.banner}</div>}
+        {errors?.banner && <div role="alert">{errors.banner}</div>}
 
         <label htmlFor="email">Email</label>
         <input
           id="email"
           placeholder="Email Address"
-          type="email"
           aria-invalid={!!errors?.email}
-          aria-errormessage="email-error"
-          {...register("email", {
-            async validate(value) {
-              // Check field
-              if (!value) return "Email is required";
-              if (!validateEmail(value)) return "Email is invalid";
+          aria-describedby="email-error"
+          {...configure("email", {
+            required,
+            type: { value: "email", message: "Email is invalid" },
+            async validate({ value }: HTMLInputElement) {
+              // Check email existence for `signup`s
               if (mode !== "signup") return;
 
-              // Check email existence for `signup`s
               const response = await fetch(`/api/email-exists?email=${value}`);
               const emailExists = await response.json().then((body: boolean) => body);
               if (emailExists) return "This email already exists. Please sign in instead.";
             },
           })}
         />
-        {!!errors?.email && (
-          <div id="email-error" role="alert">
-            {errors.email.message}
-          </div>
-        )}
+        <div id="email-error" role="alert">
+          {errors?.email}
+        </div>
 
         <label htmlFor="password">Password</label>
         <input
@@ -75,20 +83,21 @@ export default function LoginPage() {
           placeholder="Password"
           type="password"
           aria-invalid={!!errors?.password}
-          aria-errormessage="password-error"
-          {...register("password", {
-            validate(value) {
-              if (!value) return "Password is required";
-              if (mode === "signup" && !validatePassword(value))
-                return "Password must contain at least 8 characters, including a number";
-            },
+          aria-describedby="password-error"
+          {...configure("password", {
+            required,
+            pattern:
+              mode === "signin"
+                ? undefined
+                : {
+                    value: "(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}",
+                    message: "Password must contain at least 8 characters, including a number",
+                  },
           })}
         />
-        {!!errors?.password && (
-          <div id="password-error" role="alert">
-            {errors.password.message}
-          </div>
-        )}
+        <div id="password-error" role="alert">
+          {errors?.password}
+        </div>
 
         <input name="mode" type="hidden" value={mode} />
         <button type="submit">{`Sign ${mode === "signin" ? "In" : "Up"}`}</button>

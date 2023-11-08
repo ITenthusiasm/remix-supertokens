@@ -2,10 +2,11 @@
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
-import { useEffect } from "react";
-import useFormErrors from "~/hooks/useFormErrors";
+import { useEffect, useMemo } from "react";
+import { useFormValidityObserver } from "@form-observer/react";
+import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
-import { validateEmail, validatePassword, emailRegex } from "~/utils/validation";
+import { validateEmail, validatePassword } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
 // Styles
@@ -16,11 +17,19 @@ export default function ResetPassword() {
   // TODO: https://github.com/remix-run/remix/issues/3133
   const { pathname, search } = useLocation();
   const { mode, token } = useLoaderData<LoaderData>();
-  const serverErrors = useActionData<ActionData>();
+  const errors = useActionData<ActionData>();
 
-  // Manage form errors. Clear errors whenever the reset-password mode changes.
-  const { register, handleSubmit, clearErrors, trigger, errors } = useFormErrors(serverErrors);
-  useEffect(clearErrors, [mode, clearErrors]);
+  // Manage form errors.
+  const { autoObserve, configure, setFieldError, validateField, validateFields } = useFormValidityObserver("focusout");
+  const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
+
+  const formRef = useMemo(autoObserve, [autoObserve]);
+  const handleSubmit = (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault());
+
+  useEffect(() => {
+    if (!errors) return;
+    Object.entries(errors).forEach(([name, error]) => setFieldError(name, error as string));
+  }, [errors, setFieldError]);
 
   if (mode === "success") {
     return (
@@ -39,10 +48,10 @@ export default function ResetPassword() {
   if (mode === "attempt") {
     return (
       <main>
-        <Form method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
+        <Form ref={formRef} method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
           <h1>Change your password</h1>
           <h2>Enter a new password below to change your password</h2>
-          {serverErrors?.banner && <div role="alert">{serverErrors?.banner}</div>}
+          {errors?.banner && <div role="alert">{errors?.banner}</div>}
 
           <label htmlFor="password">New password</label>
           <input
@@ -50,23 +59,22 @@ export default function ResetPassword() {
             type="password"
             placeholder="New password"
             aria-invalid={!!errors?.password}
-            aria-errormessage="password-error"
-            {...register("password", {
-              validate(value) {
-                const inputName = "confirm-password";
-                const confirm = document.querySelector(`[name='${inputName}']`) as HTMLInputElement;
-                if (confirm.value) trigger(inputName);
-
-                if (!value) return "Password is required";
-                if (!validatePassword(value)) return "Password must contain at least 8 characters, including a number";
+            aria-describedby="password-error"
+            {...configure("password", {
+              required,
+              pattern: {
+                value: "(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}",
+                message: "Password must contain at least 8 characters, including a number",
+              },
+              validate(input: HTMLInputElement) {
+                const confirmPassword = input.form?.elements.namedItem("confirm-password") as HTMLInputElement;
+                if (confirmPassword.value) validateField(confirmPassword.name);
               },
             })}
           />
-          {!!errors?.password && (
-            <div id="password-error" role="alert">
-              {errors.password.message}
-            </div>
-          )}
+          <div id="password-error" role="alert">
+            {errors?.password}
+          </div>
 
           <label htmlFor="confirm-password">Confirm password</label>
           <input
@@ -74,20 +82,18 @@ export default function ResetPassword() {
             type="password"
             placeholder="Confirm your password"
             aria-invalid={!!errors?.["confirm-password"]}
-            aria-errormessage="confirm-password-error"
-            {...register("confirm-password", {
-              required: "Confirmation password is required",
-              validate(value) {
-                const password = document.querySelector("[name='password']") as HTMLInputElement;
-                if (value !== password.value) return "Confirmation password doesn't match";
+            aria-describedby="confirm-password-error"
+            {...configure("confirm-password", {
+              required,
+              validate(input: HTMLInputElement) {
+                const password = input.form?.elements.namedItem("password") as HTMLInputElement;
+                if (input.value !== password.value) return "Confirmation Password doesn't match";
               },
             })}
           />
-          {!!errors?.["confirm-password"] && (
-            <div id="confirm-password-error" role="alert">
-              {errors["confirm-password"].message}
-            </div>
-          )}
+          <div id="confirm-password-error" role="alert">
+            {errors?.["confirm-password"]}
+          </div>
 
           <input name="mode" type="hidden" value={mode} />
           {!!token && <input name="token" type="hidden" value={token} />}
@@ -109,27 +115,21 @@ export default function ResetPassword() {
 
   return (
     <main>
-      <Form method="post" onSubmit={handleSubmit}>
+      <Form ref={formRef} method="post" onSubmit={handleSubmit}>
         <h1>Reset your password</h1>
         <h2>We will send you an email to reset your password</h2>
-        {serverErrors?.banner && <div role="alert">{serverErrors?.banner}</div>}
+        {errors?.banner && <div role="alert">{errors?.banner}</div>}
 
         <label htmlFor="email">Email</label>
         <input
           id="email"
-          type="email"
           aria-invalid={!!errors?.email}
-          aria-errormessage="email-error"
-          {...register("email", {
-            required: "Email is required",
-            pattern: { value: emailRegex, message: "Email is invalid" },
-          })}
+          aria-describedby="email-error"
+          {...configure("email", { required, type: { value: "email", message: "Email is invalid" } })}
         />
-        {!!errors?.email && (
-          <div id="email-error" role="alert">
-            {errors.email.message}
-          </div>
-        )}
+        <div id="email-error" role="alert">
+          {errors?.email}
+        </div>
 
         <input name="mode" type="hidden" value={mode} />
         <button type="submit">Email me</button>
@@ -202,7 +202,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     }
 
     if (!confirmPassword) errors["confirm-password"] = "Confirmation Password is required";
-    else if (password !== confirmPassword) errors["confirm-password"] = "Confirmation password doesn't match";
+    else if (password !== confirmPassword) errors["confirm-password"] = "Confirmation Password doesn't match";
 
     if (errors.password || errors["confirm-password"]) return json<ActionData>(errors, 400);
 
