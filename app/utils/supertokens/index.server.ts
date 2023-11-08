@@ -15,7 +15,7 @@ type SignUpResult =
 
 type TokensForLogout = Pick<Tokens, "accessToken" | "antiCsrfToken">;
 type TokensForRefresh = { refreshToken: string; antiCsrfToken?: string };
-type ResetPasswordStatus = Awaited<ReturnType<typeof EmailPassword["resetPasswordUsingToken"]>>["status"];
+type ResetPasswordStatus = Awaited<ReturnType<(typeof EmailPassword)["resetPasswordUsingToken"]>>["status"];
 const recipeId = "emailpassword";
 
 const SuperTokensHelpers = {
