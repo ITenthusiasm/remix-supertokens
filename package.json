@@ -27,7 +27,7 @@
     "morgan": "^1.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "supertokens-node": "^14.1.1"
+    "supertokens-node": "^16.7.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^1.17.0",

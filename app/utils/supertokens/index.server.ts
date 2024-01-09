@@ -1,3 +1,4 @@
+import SuperTokens from "supertokens-node";
 import EmailPassword from "supertokens-node/recipe/emailpassword";
 import Session from "supertokens-node/recipe/session";
 import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
@@ -17,28 +18,31 @@ type TokensForLogout = Pick<Tokens, "accessToken" | "antiCsrfToken">;
 type TokensForRefresh = { refreshToken: string; antiCsrfToken?: string };
 type ResetPasswordStatus = Awaited<ReturnType<(typeof EmailPassword)["resetPasswordUsingToken"]>>["status"];
 const recipeId = "emailpassword";
+const tenantId = "public"; // Default tenantId for `SuperTokens`
 
 const SuperTokensHelpers = {
   async signin(email: string, password: string): Promise<SignInResult> {
-    const signinResult = await EmailPassword.signIn(email, password);
+    const signinResult = await EmailPassword.signIn(tenantId, email, password);
     if (signinResult.status === "WRONG_CREDENTIALS_ERROR") return { status: signinResult.status };
 
     const { status, user } = signinResult;
-    const session = await Session.createNewSessionWithoutRequestResponse(user.id);
+    const recipeUserId = SuperTokens.convertToRecipeUserId(user.id);
+    const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
     return { status, tokens: session.getAllSessionTokensDangerously() };
   },
 
   async signup(email: string, password: string): Promise<SignUpResult> {
-    const signupResult = await EmailPassword.signUp(email, password);
+    const signupResult = await EmailPassword.signUp(tenantId, email, password);
     if (signupResult.status === "EMAIL_ALREADY_EXISTS_ERROR") return { status: signupResult.status };
 
     const { status, user } = signupResult;
-    const session = await Session.createNewSessionWithoutRequestResponse(user.id);
+    const recipeUserId = SuperTokens.convertToRecipeUserId(user.id);
+    const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
     return { status, tokens: session.getAllSessionTokensDangerously() };
   },
 
   async emailExists(email: string): Promise<boolean> {
-    return EmailPassword.getUserByEmail(email).then(Boolean);
+    return SuperTokens.listUsersByAccountInfo(tenantId, { email }).then((users) => Boolean(users.length));
   },
 
   async logout({ accessToken, antiCsrfToken }: TokensForLogout): Promise<void> {
@@ -59,21 +63,27 @@ const SuperTokensHelpers = {
 
   // NOTE: Fails silently for unknown emails intentionally
   async sendPasswordResetEmail(email: string): Promise<void> {
-    const user = await EmailPassword.getUserByEmail(email);
-    if (!user) return console.log(`Password reset email not sent, unknown email: ${email}`);
+    // NOTE: Assumes that an email is associated with only 1 user/account
+    const [user] = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
+    if (!user) return console.log(`Password reset email not sent to unrecognized address: ${email}`);
 
-    const tokenResult = await EmailPassword.createResetPasswordToken(user.id);
+    const tokenResult = await EmailPassword.createResetPasswordToken(tenantId, user.id, email);
     if (tokenResult.status === "UNKNOWN_USER_ID_ERROR") {
       return console.log(`Password reset email not sent, unknown user id: ${user.id}`);
     }
 
     const passwordResetPath = commonRoutes.resetPassword;
     const passwordResetLink = `${process.env.DOMAIN}${passwordResetPath}?token=${tokenResult.token}&rid=${recipeId}`;
-    await EmailPassword.sendEmail({ type: "PASSWORD_RESET", user, passwordResetLink });
+    return EmailPassword.sendEmail({
+      type: "PASSWORD_RESET",
+      tenantId,
+      user: { id: user.id, recipeUserId: SuperTokens.convertToRecipeUserId(user.id), email },
+      passwordResetLink,
+    });
   },
 
   async resetPassword(token: string, newPassword: string): Promise<ResetPasswordStatus> {
-    const { status } = await EmailPassword.resetPasswordUsingToken(token, newPassword);
+    const { status } = await EmailPassword.resetPasswordUsingToken(tenantId, token, newPassword);
     return status;
   },
 };
