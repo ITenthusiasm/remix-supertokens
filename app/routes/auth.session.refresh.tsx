@@ -13,7 +13,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const headers = createHeadersFromTokens(newTokens);
   headers.set("Location", newTokens.accessToken ? url.searchParams.get("returnUrl") || "/" : commonRoutes.login);
-  return new Response(null, { status: 307, headers });
+  return new Response(null, { status: newTokens.accessToken ? 307 : 303, headers });
 };
 
 export const action = loader as ActionFunction;
