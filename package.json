@@ -15,7 +15,7 @@
     "format": "prettier --ignore-path .gitignore --write ."
   },
   "dependencies": {
-    "@form-observer/react": "^0.5.3",
+    "@form-observer/react": "^0.7.0",
     "@remix-run/express": "^1.19.3",
     "@remix-run/node": "^1.19.3",
     "@remix-run/react": "^1.19.3",
