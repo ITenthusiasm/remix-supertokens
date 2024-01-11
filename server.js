@@ -45,7 +45,7 @@ app.use(
     origin: process.env.SUPERTOKENS_WEBSITE_DOMAIN,
     allowedHeaders: ["content-type", ...SuperTokens.getAllCORSHeaders()],
     credentials: true,
-  })
+  }),
 );
 
 /* -------------------- End > Super Tokens -------------------- */
@@ -82,7 +82,7 @@ app.all(
           build: require(BUILD_DIR),
           mode: process.env.NODE_ENV,
           getLoadContext: () => ({ ...res.locals }),
-        })(req, res, next)
+        })(req, res, next),
 );
 
 const port = process.env.PORT || 3000;
