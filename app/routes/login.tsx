@@ -26,9 +26,12 @@ export default function LoginPage() {
   const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
 
   useEffect(() => {
-    if (!errors) return;
-    Object.entries(errors).forEach(([name, error]) => setFieldError(name, error as string));
-  }, [errors, setFieldError]);
+    const form = document.querySelector("form") as HTMLFormElement;
+    Array.prototype.forEach.call(form.elements, (field: HTMLInputElement) => {
+      const message = errors?.[field.name as keyof typeof errors];
+      return message == null ? clearFieldError(field.name) : setFieldError(field.name, message);
+    });
+  }, [errors, setFieldError, clearFieldError]);
 
   // Clear errors whenever the authentication mode changes.
   useEffect(() => {

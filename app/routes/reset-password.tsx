@@ -20,16 +20,22 @@ export default function ResetPassword() {
   const errors = useActionData<ActionData>();
 
   // Manage form errors.
-  const { autoObserve, configure, setFieldError, validateField, validateFields } = useFormValidityObserver("focusout");
+  const { autoObserve, configure, setFieldError, clearFieldError, validateField, validateFields } =
+    useFormValidityObserver("focusout");
   const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
 
   const formRef = useMemo(autoObserve, [autoObserve]);
   const handleSubmit = (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault());
 
   useEffect(() => {
-    if (!errors) return;
-    Object.entries(errors).forEach(([name, error]) => setFieldError(name, error as string));
-  }, [errors, setFieldError]);
+    const form = document.querySelector("form");
+    if (!form) return;
+
+    Array.prototype.forEach.call(form.elements, (field: HTMLInputElement) => {
+      const message = errors?.[field.name as keyof typeof errors];
+      return message == null ? clearFieldError(field.name) : setFieldError(field.name, message);
+    });
+  }, [errors, setFieldError, clearFieldError]);
 
   if (mode === "success") {
     return (
