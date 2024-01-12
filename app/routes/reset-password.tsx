@@ -1,7 +1,7 @@
 // Primary Imports
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
-import { Form, Link, useLoaderData, useLocation, useActionData } from "@remix-run/react";
+import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
 import { useEffect, useMemo } from "react";
 import { useFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
@@ -14,8 +14,6 @@ import authFormStyles from "~/styles/shared/auth-form.css";
 
 /* -------------------- Browser -------------------- */
 export default function ResetPassword() {
-  // TODO: https://github.com/remix-run/remix/issues/3133
-  const { pathname, search } = useLocation();
   const { mode, token } = useLoaderData<LoaderData>();
   const errors = useActionData<ActionData>();
 
@@ -54,7 +52,7 @@ export default function ResetPassword() {
   if (mode === "attempt") {
     return (
       <main>
-        <Form ref={formRef} method="post" action={`${pathname}${search}`} onSubmit={handleSubmit}>
+        <Form ref={formRef} method="post" onSubmit={handleSubmit}>
           <h1>Change your password</h1>
           <h2>Enter a new password below to change your password</h2>
           {errors?.banner && <div role="alert">{errors?.banner}</div>}

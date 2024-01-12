@@ -1,7 +1,7 @@
 // Primary imports
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
-import { Form, Link, useLoaderData, useActionData, useLocation } from "@remix-run/react";
+import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
 import { useEffect, useMemo } from "react";
 import { useFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
@@ -16,8 +16,6 @@ import styles from "~/styles/routes/login.css";
 
 /* -------------------- Browser -------------------- */
 export default function LoginPage() {
-  // TODO: https://github.com/remix-run/remix/issues/3133
-  const { pathname, search } = useLocation();
   const { mode } = useLoaderData<LoaderData>();
   const errors = useActionData<ActionData>();
 
@@ -41,7 +39,7 @@ export default function LoginPage() {
 
   return (
     <main>
-      <Form ref={useMemo(autoObserve, [autoObserve])} method="post" action={`${pathname}${search}`}>
+      <Form ref={useMemo(autoObserve, [autoObserve])} method="post">
         <h1>{`Sign ${mode === "signin" ? "In" : "Up"}`}</h1>
 
         {mode === "signin" ? (
