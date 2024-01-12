@@ -32,6 +32,12 @@ We've already taken care of this for you in our project. However, you should kee
 
 (Some additional context: https://discord.com/channels/770287896669978684/1194003027695247391/1194003027695247391)
 
+### Remix's File Routing System
+
+There seems to have been some [controversy](https://github.com/remix-run/remix/discussions/4482) surrounding the new file routing convention in Remix v2. Due to its (subjectively) unappealing look to the maintainers, we are [using the old file routing convention](https://remix.run/docs/en/main/start/v2#file-system-route-convention). However, you are more than welcome to use Remix's new system by removing the customization! Because this project doesn't use any directories for file routing, you will not experience any significant differences between either routing convention (assuming you haven't extended the project yet).
+
+For what it's worth, the well-known web developer, [Kent C. Dodds](https://twitter.com/kentcdodds), has chosen to go with a [convention crafted by Kiliman](https://github.com/remix-run/remix/discussions/4482#discussioncomment-4723477). It seems favorable, and this project may very well incorporate it in the future.
+
 ## Frequently Asked Questions
 
 ### Why Use a Custom UI Instead of the Components Provided by SuperTokens?
