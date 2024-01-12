@@ -19,6 +19,19 @@ If there are any questions, concerns, or ideas for improvement, feel free to rea
      - `SUPERTOKENS_API_DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_API_BASE_PATH` (e.g., `/auth`)
 
+## Gotchas
+
+### Properly Using ESM
+
+This project uses ESM by default. (This was accomplished by setting `type` to `"module"` in the `package.json` file.) Unfortunately, this creates some complications. In short, all `import`s that will be handled by Node.js -- whether in transpiled files or in untranspiled files -- _need_ to follow the [rules](https://nodejs.org/api/esm.html#import-specifiers) that Node.js provides for ESM imports. Some examples:
+
+- The `/server.js` file is pure JS. It is not transpiled, and it is run directly by Node. Therefore, it must properly include the `.js` file extension for relative imports.
+- Node.js will _eventually_ encounter `index.server.ts` (_post transpilation_). Node.js cannot understand `import Session from "supertokens-node/recipe/session"` when using ESM, and Remix does not transpile this import since it comes from `node_modules`. Therefore, you must change it to `import Session from "supertokens-node/recipe/session/index.js"` for Node's sake.
+
+We've already taken care of this for you in our project. However, you should keep this in mind when _extending_ this project with your own code.
+
+(Some additional context: https://discord.com/channels/770287896669978684/1194003027695247391/1194003027695247391)
+
 ## Frequently Asked Questions
 
 ### Why Use a Custom UI Instead of the Components Provided by SuperTokens?

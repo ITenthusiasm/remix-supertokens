@@ -2,8 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "target": "ESNext",
+    "module": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "strict": true,
     "allowJs": true,
     "checkJs": true,
@@ -17,5 +18,5 @@
       "~/*": ["./app/*"]
     }
   },
-  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx", "app/**/*.js"]
+  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx", "app/**/*.js", "server.js"]
 }

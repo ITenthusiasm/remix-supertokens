@@ -1,22 +1,36 @@
-const path = require("path");
-const express = require("express");
-const cors = require("cors");
-const compression = require("compression");
-const morgan = require("morgan");
-const { createRequestHandler } = require("@remix-run/express");
-const SuperTokens = require("supertokens-node");
-const Session = require("supertokens-node/recipe/session");
-const EmailPassword = require("supertokens-node/recipe/emailpassword");
-const { serialize, parse } = require("cookie");
-require("dotenv/config"); // Side effect
-const { commonRoutes } = require("./app/utils/constants");
-const {
+// Node.js Modules
+import fs from "node:fs";
+import path from "node:path";
+import url from "node:url";
+
+// Express Modules
+import express from "express";
+import cors from "cors";
+import compression from "compression";
+import morgan from "morgan";
+
+// SuperTokens Modules
+import SuperTokens from "supertokens-node";
+import Session from "supertokens-node/recipe/session/index.js";
+import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
+
+// Miscellaneous + Local Modules
+import { createRequestHandler } from "@remix-run/express";
+import { broadcastDevReady, installGlobals } from "@remix-run/node";
+import { serialize, parse } from "cookie";
+import sourceMapSupport from "source-map-support";
+import "dotenv/config"; // Side effect
+import { commonRoutes } from "./app/utils/constants.js";
+import {
   authCookieNames,
   deleteCookieSettings,
   deleteRefreshSettings,
-} = require("./app/utils/supertokens/cookieHelpers.server");
+} from "./app/utils/supertokens/cookieHelpers.server.js";
 
-const BUILD_DIR = path.join(process.cwd(), "build");
+const port = process.env.PORT || 3000;
+const BUILD_PATH = path.resolve("build/index.js");
+const VERSION_PATH = path.resolve("build/version.txt");
+
 const publicPages = ["/", commonRoutes.login, commonRoutes.resetPassword, commonRoutes.emailExists];
 const app = express();
 
@@ -24,13 +38,13 @@ const app = express();
 SuperTokens.init({
   framework: "express",
   supertokens: {
-    connectionURI: process.env.SUPERTOKENS_CONNECTION_URI,
+    connectionURI: /** @type {string} */ (process.env.SUPERTOKENS_CONNECTION_URI),
     apiKey: process.env.SUPERTOKENS_API_KEY,
   },
   appInfo: {
     appName: "Testing Remix with Custom Backend",
     websiteDomain: process.env.SUPERTOKENS_WEBSITE_DOMAIN,
-    apiDomain: process.env.SUPERTOKENS_API_DOMAIN,
+    apiDomain: /** @type {string} */ (process.env.SUPERTOKENS_API_DOMAIN),
     apiBasePath: process.env.SUPERTOKENS_API_BASE_PATH,
   },
   recipeList: [
@@ -50,6 +64,19 @@ app.use(
 
 /* -------------------- End > Super Tokens -------------------- */
 
+installGlobals();
+sourceMapSupport.install({
+  retrieveSourceMap(source) {
+    if (!source.startsWith("file://")) return null;
+
+    const filePath = url.fileURLToPath(source);
+    const sourceMapPath = `${filePath}.map`;
+
+    if (!fs.existsSync(sourceMapPath)) return null;
+    return { url: source, map: fs.readFileSync(sourceMapPath, "utf8") };
+  },
+});
+
 app.use(compression());
 
 // http://expressjs.com/en/advanced/best-practice-security.html#at-a-minimum-disable-x-powered-by-header
@@ -58,57 +85,72 @@ app.disable("x-powered-by");
 // Remix fingerprints its assets so we can cache forever.
 app.use("/build", express.static("public/build", { immutable: true, maxAge: "1y" }));
 
-// Everything else (like favicon.ico) is cached for an hour. You may want to be
-// more aggressive with this caching.
+// Everything else (like favicon.ico) is cached for an hour. You may want to be more aggressive with this caching.
 app.use(express.static("public", { maxAge: "1h" }));
-
 app.use(morgan("tiny"));
 
+const initialBuild = await reimportServer();
 app.all(
   "*",
   setupRemixContext,
   process.env.NODE_ENV === "development"
-    ? (req, res, next) => {
-        purgeRequireCache();
-
-        return createRequestHandler({
-          build: require(BUILD_DIR),
-          mode: process.env.NODE_ENV,
-          getLoadContext: () => ({ ...res.locals }),
-        })(req, res, next);
-      }
-    : (req, res, next) =>
-        createRequestHandler({
-          build: require(BUILD_DIR),
-          mode: process.env.NODE_ENV,
-          getLoadContext: () => ({ ...res.locals }),
-        })(req, res, next),
+    ? await createDevRequestHandler(initialBuild)
+    : createRequestHandler({
+        build: initialBuild,
+        mode: initialBuild.mode,
+        getLoadContext: (_, res) => ({ ...res.locals }),
+      }),
 );
-
-const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
   console.log(`Express server listening on port ${port}`);
+  if (process.env.NODE_ENV === "development") broadcastDevReady(initialBuild);
 });
 
-function purgeRequireCache() {
-  // purge require cache on requests for "server side HMR" this won't let
-  // you have in-memory objects between requests in development,
-  // alternatively you can set up nodemon/pm2-dev to restart the server on
-  // file changes, but then you'll have to reconnect to databases/etc on each
-  // change. We prefer the DX of this, so we've included it for you by default
-  for (let key in require.cache) {
-    if (key.startsWith(BUILD_DIR)) {
-      delete require.cache[key];
+/** @returns {Promise<import("@remix-run/node").ServerBuild>} */
+async function reimportServer() {
+  const stat = fs.statSync(BUILD_PATH);
+  const buildUrl = url.pathToFileURL(BUILD_PATH).href; // Used for Windows compatibility with dynamic `import`
+
+  // Use a timestamp query parameter to bust the `import` cache.
+  return import(`${buildUrl}?t=${stat.mtimeMs}`);
+}
+
+/**
+ * @param {import("@remix-run/node").ServerBuild} firstBuild The {@link initialBuild} generated in this file.
+ * @returns {Promise<import('@remix-run/express').RequestHandler>}
+ */
+async function createDevRequestHandler(firstBuild) {
+  let build = firstBuild;
+  const chokidar = await import("chokidar");
+  chokidar.watch(VERSION_PATH, { ignoreInitial: true }).on("add", handleServerUpdate).on("change", handleServerUpdate);
+
+  // Wrap request handler to make sure it's recreated with the latest build for every request
+  return async (req, res, next) => {
+    try {
+      const getLoadContext = () => ({ ...res.locals });
+      return createRequestHandler({ build, mode: "development", getLoadContext })(req, res, next);
+    } catch (error) {
+      next(error);
     }
+  };
+
+  async function handleServerUpdate() {
+    // 1. Re-import the server build
+    build = await reimportServer();
+
+    // 2. Tell Remix that this app server is now up-to-date and ready
+    broadcastDevReady(build);
   }
 }
 
 /* -------------------- Our Own Helpers/Functions -------------------- */
 /**
- * @type {express.RequestHandler} Derives all the data that needs to be passed to
- * `Remix`'s `getLoadContext` and attaches it to `res.locals`. Also redirects
- * unauthenticated and session-expired users to the proper auth route.
+ * Derives all the data that needs to be passed to `Remix`'s `getLoadContext` and attaches it to `res.locals`.
+ * Also redirects unauthenticated and session-expired users to the proper auth route.
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
  */
 async function setupRemixContext(req, res, next) {
   try {
@@ -122,6 +164,7 @@ async function setupRemixContext(req, res, next) {
     return next();
   } catch (error) {
     if (!Session.Error.isErrorFromSuperTokens(error)) return res.status(500).send("An unexpected error occurred");
+
     // URL Details
     const url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
     const isDataRequest = url.searchParams.has("_data");
@@ -138,6 +181,8 @@ async function setupRemixContext(req, res, next) {
 
     const basePath = userNeedsSessionRefresh ? commonRoutes.refreshSession : commonRoutes.login;
     const returnUrl = encodeURI(`${url.pathname}${url.search}`);
+    // TODO: The `logout` part makes sense, but not the `refresh` part here. Should we remove `refresh`?
+    // Is it to solve recursive redirecting? Is that handled by `requestAllowed` (above) now?
     const redirectUrl =
       url.pathname === commonRoutes.refreshSession || url.pathname === "/logout"
         ? basePath

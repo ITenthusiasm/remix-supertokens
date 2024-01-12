@@ -1,6 +1,7 @@
 // Primary Imports
 import { json } from "@remix-run/node";
-import type { LoaderFunction, MetaFunction, LinksFunction } from "@remix-run/node";
+import type { LoaderFunction, LinksFunction } from "@remix-run/node";
+import { cssBundleHref } from "@remix-run/css-bundle";
 import {
   Links,
   LiveReload,
@@ -14,7 +15,7 @@ import {
 } from "@remix-run/react";
 
 import Header, { headerStyles } from "~/components/Header";
-import { authPages } from "~/utils/constants";
+import { authPages } from "~/utils/constants.js";
 
 // Styles
 import globalStyles from "~/styles/shared/global.css";
@@ -28,6 +29,9 @@ export default function App() {
   return (
     <html lang="en">
       <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Remix SuperTokens</title>
         <Meta />
         <Links />
       </head>
@@ -49,15 +53,10 @@ export default function App() {
   );
 }
 
-export const meta: MetaFunction = () => ({
-  charset: "utf-8",
-  title: "New Remix App",
-  viewport: "width=device-width,initial-scale=1",
-});
-
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: headerStyles },
   { rel: "stylesheet", href: globalStyles },
+  ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
 ];
 
 /* -------------------- Server -------------------- */

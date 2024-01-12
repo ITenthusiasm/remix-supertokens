@@ -1,5 +1,5 @@
 /** Commonly referenced routes throughout the app */
-const commonRoutes = /** @type {const} */ ({
+export const commonRoutes = /** @type {const} */ ({
   login: "/login",
   resetPassword: "/reset-password",
   refreshSession: "/auth/session/refresh",
@@ -7,11 +7,9 @@ const commonRoutes = /** @type {const} */ ({
 });
 
 /** @type {string[]} Page routes related to authentication. */
-const authPages = [
+export const authPages = [
   commonRoutes.login,
   commonRoutes.resetPassword,
   commonRoutes.refreshSession,
   commonRoutes.emailExists,
 ];
-
-module.exports = { commonRoutes, authPages };

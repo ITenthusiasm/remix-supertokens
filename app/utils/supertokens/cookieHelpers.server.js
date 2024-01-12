@@ -1,17 +1,17 @@
-const { serialize } = require("cookie");
-const { commonRoutes } = require("../constants");
+import { serialize } from "cookie";
+import { commonRoutes } from "../constants.js";
 
 /** @typedef {Omit<import("cookie").CookieSerializeOptions, "encode">} CookieSettings */
 
 /** @typedef {Pick<
   ReturnType<
-    import("supertokens-node/lib/build/recipe/session/types")
+    import("supertokens-node/lib/build/recipe/session/types.d.ts")
       .SessionContainerInterface["getAllSessionTokensDangerously"]
   >, "accessToken" | "refreshToken" | "antiCsrfToken"
 >} Tokens */
 
 /** The `name`s of the `SuperTokens` cookies used throughout the application */
-const authCookieNames = Object.freeze({ access: "sAccessToken", refresh: "sRefreshToken", csrf: "sAntiCsrf" });
+export const authCookieNames = Object.freeze({ access: "sAccessToken", refresh: "sRefreshToken", csrf: "sAntiCsrf" });
 const oneYearInMilliseconds = 365 * 24 * 60 * 60 * 1000;
 
 /** @satisfies {CookieSettings} */
@@ -29,7 +29,7 @@ const commonCookieSettings = Object.freeze({
  * @param {keyof typeof authCookieNames} [type] The type of cookie for which the settings are being generated
  * @returns {CookieSettings}
  */
-function createCookieSettings(type) {
+export function createCookieSettings(type) {
   const nextYear = new Date(new Date().getTime() + oneYearInMilliseconds);
 
   /*
@@ -40,8 +40,8 @@ function createCookieSettings(type) {
 }
 
 /** @satisfies {CookieSettings} */
-const deleteCookieSettings = Object.freeze({ expires: new Date(0), path: "/" });
-const deleteRefreshSettings = Object.freeze({ ...deleteCookieSettings, path: commonRoutes.refreshSession });
+export const deleteCookieSettings = Object.freeze({ expires: new Date(0), path: "/" });
+export const deleteRefreshSettings = Object.freeze({ ...deleteCookieSettings, path: commonRoutes.refreshSession });
 
 /**
  * Generates the HTTP Headers needed to store the `SuperTokens` auth tokens in the user's browser as cookies.
@@ -51,7 +51,7 @@ const deleteRefreshSettings = Object.freeze({ ...deleteCookieSettings, path: com
  * @param {Partial<Tokens>} tokens
  * @returns {Headers}
  */
-function createHeadersFromTokens(tokens) {
+export function createHeadersFromTokens(tokens) {
   const headers = new Headers();
   const headerName = "Set-Cookie";
   const { accessToken, refreshToken, antiCsrfToken } = tokens;
@@ -67,11 +67,3 @@ function createHeadersFromTokens(tokens) {
 
   return headers;
 }
-
-module.exports = {
-  authCookieNames,
-  deleteCookieSettings,
-  deleteRefreshSettings,
-  createCookieSettings,
-  createHeadersFromTokens,
-};

@@ -1,6 +1,6 @@
 import SuperTokens from "supertokens-node";
-import EmailPassword from "supertokens-node/recipe/emailpassword";
-import Session from "supertokens-node/recipe/session";
+import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
+import Session from "supertokens-node/recipe/session/index.js";
 import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
 import { commonRoutes } from "~/utils/constants";
 
