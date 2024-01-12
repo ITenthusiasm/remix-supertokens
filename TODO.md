@@ -14,5 +14,4 @@
       - [ ] `/logout`
       - [x] `/private`
       - [ ] `/reset-password`
-- [ ] Add `useFormLocalStorage` hook to `React Discoveries` with valid tests.
 - [ ] **REPLACE** the `SuperTokens` `getAllCORSHeaders` middleware function with an implementation that _does not_ require using middleware if possible. (We need this for things like `SvelteKit` and `SolidStart`).
