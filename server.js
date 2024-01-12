@@ -181,12 +181,7 @@ async function setupRemixContext(req, res, next) {
 
     const basePath = userNeedsSessionRefresh ? commonRoutes.refreshSession : commonRoutes.login;
     const returnUrl = encodeURI(`${url.pathname}${url.search}`);
-    // TODO: The `logout` part makes sense, but not the `refresh` part here. Should we remove `refresh`?
-    // Is it to solve recursive redirecting? Is that handled by `requestAllowed` (above) now?
-    const redirectUrl =
-      url.pathname === commonRoutes.refreshSession || url.pathname === "/logout"
-        ? basePath
-        : `${basePath}?returnUrl=${returnUrl}`;
+    const redirectUrl = `${basePath}?returnUrl=${returnUrl}`;
 
     // Delete the user's tokens if they don't need to attempt a token refresh.
     if (!userNeedsSessionRefresh) {
