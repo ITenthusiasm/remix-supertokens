@@ -1,6 +1,6 @@
 // Primary Imports
 import { json } from "@remix-run/node";
-import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
+import type { LoaderFunction, ActionFunction, LinksFunction, AppLoadContext } from "@remix-run/node";
 import { Form, useLoaderData, useActionData } from "@remix-run/react";
 
 // Styles
@@ -40,11 +40,11 @@ export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
 /* -------------------- Server -------------------- */
 interface LoaderData {
-  user: NonNullable<RemixContext["user"]>;
+  user: NonNullable<AppLoadContext["user"]>;
 }
 
 export const loader: LoaderFunction = ({ context }) => {
-  return json<LoaderData>({ user: { id: (context as RemixContext).user?.id as string } });
+  return json<LoaderData>({ user: context.user as LoaderData["user"] });
 };
 
 type ActionData = undefined | { success: boolean; data: { text: string } };

@@ -160,7 +160,7 @@ async function setupRemixContext(req, res, next) {
     const session = await Session.getSessionWithoutRequestResponse(accessToken, antiCsrfToken);
     const userId = session.getUserId();
 
-    res.locals = { user: { id: userId } };
+    res.locals.user = userId ? { id: userId } : undefined;
     return next();
   } catch (error) {
     if (!Session.Error.isErrorFromSuperTokens(error)) return res.status(500).send("An unexpected error occurred");
@@ -175,7 +175,7 @@ async function setupRemixContext(req, res, next) {
       publicPages.includes(url.pathname) || (userNeedsSessionRefresh && url.pathname === commonRoutes.refreshSession);
 
     if (requestAllowed) {
-      res.locals = { user: {} };
+      res.locals.user = undefined;
       return next();
     }
 

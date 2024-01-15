@@ -152,7 +152,7 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/", 303);
+  if (context.user?.id) return redirect("/", 303);
 
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
@@ -175,7 +175,7 @@ type ActionData =
     };
 
 export const action: ActionFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/", 303);
+  if (context.user?.id) return redirect("/", 303);
 
   const formData = await request.formData().then(Object.fromEntries);
   const { mode } = formData;

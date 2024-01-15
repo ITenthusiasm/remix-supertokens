@@ -124,7 +124,7 @@ interface LoaderData {
 }
 
 export const loader: LoaderFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/", 303);
+  if (context.user?.id) return redirect("/", 303);
 
   const loginMode = new URL(request.url).searchParams.get("mode");
   const mode = loginMode === "signup" ? "signup" : "signin";
@@ -134,7 +134,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 type ActionData = undefined | { banner?: string | null; email?: string | null; password?: string | null };
 
 export const action: ActionFunction = async ({ request, context }) => {
-  if ((context as RemixContext).user?.id) return redirect("/", 303);
+  if (context.user?.id) return redirect("/", 303);
 
   // Form Data
   const formData = await request.formData().then(Object.fromEntries);

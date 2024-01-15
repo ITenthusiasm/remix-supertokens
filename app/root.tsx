@@ -1,6 +1,6 @@
 // Primary Imports
 import { json } from "@remix-run/node";
-import type { LoaderFunction, LinksFunction } from "@remix-run/node";
+import type { LoaderFunction, LinksFunction, AppLoadContext } from "@remix-run/node";
 import { cssBundleHref } from "@remix-run/css-bundle";
 import {
   Links,
@@ -60,10 +60,5 @@ export const links: LinksFunction = () => [
 ];
 
 /* -------------------- Server -------------------- */
-interface LoaderData {
-  user?: RemixContext["user"];
-}
-
-export const loader: LoaderFunction = ({ context }) => {
-  return json<LoaderData>({ user: (context as RemixContext).user });
-};
+type LoaderData = Pick<AppLoadContext, "user">;
+export const loader: LoaderFunction = ({ context }) => json<LoaderData>(context);
