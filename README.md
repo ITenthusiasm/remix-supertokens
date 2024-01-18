@@ -85,9 +85,10 @@ Bear in mind that if you're using a framework that (sufficiently) protects again
 
 I hope you find this useful! Let me know your thoughts here on GitHub or on their [Discord](https://supertokens.com/discord). :&rpar; If there are any ways that I can improve anything here, feel free to say so.
 
-**(Original `Remix` README is below.)**
-
----
+<details>
+  <summary>
+    <b>Original <code>Remix</code> README</b>
+  </summary>
 
 # Welcome to Remix!
 
@@ -140,3 +141,5 @@ rm -rf app
 # copy your app over
 cp -R ../my-old-remix-app/app app
 ```
+
+</details>
