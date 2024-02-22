@@ -1,24 +1,13 @@
 // Primary Imports
 import { json } from "@remix-run/node";
 import type { LoaderFunction, LinksFunction, AppLoadContext } from "@remix-run/node";
-import { cssBundleHref } from "@remix-run/css-bundle";
-import {
-  Links,
-  LiveReload,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  Link,
-  useLoaderData,
-  useMatches,
-} from "@remix-run/react";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration, Link, useLoaderData, useMatches } from "@remix-run/react";
 
 import Header, { headerStyles } from "~/components/Header";
 import { authPages } from "~/utils/constants.js";
 
 // Styles
-import globalStyles from "~/styles/shared/global.css";
+import globalStyles from "~/styles/shared/global.css?url";
 
 /* -------------------- Browser -------------------- */
 export default function App() {
@@ -47,7 +36,6 @@ export default function App() {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
-        <LiveReload />
       </body>
     </html>
   );
@@ -56,7 +44,6 @@ export default function App() {
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: headerStyles },
   { rel: "stylesheet", href: globalStyles },
-  ...(cssBundleHref ? [{ rel: "stylesheet", href: cssBundleHref }] : []),
 ];
 
 /* -------------------- Server -------------------- */

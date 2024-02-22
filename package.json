@@ -5,19 +5,18 @@
   "sideEffects": false,
   "license": "MIT",
   "scripts": {
-    "build": "remix build",
-    "dev": "remix dev --manual -c \"node --watch-path server.js --watch server.js\"",
     "sass": "sass --watch app/:app/",
+    "build": "remix vite:build",
+    "dev": "node ./server.js",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "lint": "prettier --ignore-path .gitignore --check . && eslint --ignore-path .gitignore . && tsc",
     "format": "prettier --ignore-path .gitignore --write ."
   },
   "dependencies": {
     "@form-observer/react": "^0.7.1",
-    "@remix-run/css-bundle": "^2.5.0",
-    "@remix-run/express": "^2.5.0",
-    "@remix-run/node": "^2.5.0",
-    "@remix-run/react": "^2.5.0",
+    "@remix-run/express": "^2.7.2",
+    "@remix-run/node": "^2.7.2",
+    "@remix-run/react": "^2.7.2",
     "compression": "^1.7.4",
     "cookie": "^0.6.0",
     "cors": "^2.8.5",
@@ -27,12 +26,11 @@
     "morgan": "^1.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "source-map-support": "^0.5.21",
     "supertokens-node": "^16.7.1"
   },
   "devDependencies": {
-    "@remix-run/dev": "^2.5.0",
-    "@remix-run/eslint-config": "^2.5.0",
+    "@remix-run/dev": "^2.7.2",
+    "@remix-run/eslint-config": "^2.7.2",
     "@remix-run/v1-route-convention": "^0.1.4",
     "@types/compression": "^1.7.5",
     "@types/cookie": "^0.6.0",
@@ -47,7 +45,8 @@
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.2.1",
     "sass": "^1.69.7",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
   },
   "engines": {
     "node": ">=18"

@@ -4,7 +4,7 @@ import type { LoaderFunction, ActionFunction, LinksFunction, AppLoadContext } fr
 import { Form, useLoaderData, useActionData } from "@remix-run/react";
 
 // Styles
-import styles from "~/styles/routes/private.css";
+import styles from "~/styles/routes/private.css?url";
 
 /* -------------------- Browser -------------------- */
 export default function Private() {

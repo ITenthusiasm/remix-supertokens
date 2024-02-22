@@ -1,8 +1,3 @@
-// Node.js Modules
-import fs from "node:fs";
-import path from "node:path";
-import url from "node:url";
-
 // Express Modules
 import express from "express";
 import cors from "cors";
@@ -16,9 +11,8 @@ import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
 
 // Miscellaneous + Local Modules
 import { createRequestHandler } from "@remix-run/express";
-import { broadcastDevReady, installGlobals } from "@remix-run/node";
+import { installGlobals } from "@remix-run/node";
 import { serialize, parse } from "cookie";
-import sourceMapSupport from "source-map-support";
 import "dotenv/config"; // Side effect
 import { commonRoutes } from "./app/utils/constants.js";
 import {
@@ -28,8 +22,6 @@ import {
 } from "./app/utils/supertokens/cookieHelpers.server.js";
 
 const port = process.env.PORT || 3000;
-const BUILD_PATH = path.resolve("build/index.js");
-const VERSION_PATH = path.resolve("build/version.txt");
 
 const publicPages = ["/", commonRoutes.login, commonRoutes.resetPassword, commonRoutes.emailExists];
 const app = express();
@@ -64,85 +56,42 @@ app.use(
 
 /* -------------------- End > Super Tokens -------------------- */
 
-installGlobals();
-sourceMapSupport.install({
-  retrieveSourceMap(source) {
-    if (!source.startsWith("file://")) return null;
-
-    const filePath = url.fileURLToPath(source);
-    const sourceMapPath = `${filePath}.map`;
-
-    if (!fs.existsSync(sourceMapPath)) return null;
-    return { url: source, map: fs.readFileSync(sourceMapPath, "utf8") };
-  },
-});
-
-app.use(compression());
-
 // http://expressjs.com/en/advanced/best-practice-security.html#at-a-minimum-disable-x-powered-by-header
 app.disable("x-powered-by");
+app.use(compression());
+app.use(morgan("tiny"));
+installGlobals();
 
-// Remix fingerprints its assets so we can cache forever.
-app.use("/build", express.static("public/build", { immutable: true, maxAge: "1y" }));
+const viteDevServer =
+  process.env.NODE_ENV === "production"
+    ? undefined
+    : await import("vite").then((vite) => vite.createServer({ server: { middlewareMode: true } }));
+
+// Handle asset requests
+if (viteDevServer) app.use(viteDevServer.middlewares);
+else {
+  // Vite fingerprints its assets so we can cache forever.
+  app.use("/assets", express.static("build/client/assets", { immutable: true, maxAge: "1y" }));
+}
 
 // Everything else (like favicon.ico) is cached for an hour. You may want to be more aggressive with this caching.
-app.use(express.static("public", { maxAge: "1h" }));
-app.use(morgan("tiny"));
+app.use(express.static("build/client", { maxAge: "1h" }));
 
-const initialBuild = await reimportServer();
 app.all(
   "*",
   setupRemixContext,
-  process.env.NODE_ENV === "development"
-    ? await createDevRequestHandler(initialBuild)
-    : createRequestHandler({
-        build: initialBuild,
-        mode: initialBuild.mode,
-        getLoadContext: (_, res) => ({ ...res.locals }),
-      }),
+  createRequestHandler({
+    getLoadContext: (_, res) => /** @type {import("@remix-run/node").AppLoadContext} */ ({ ...res.locals }),
+    // TODO: Maybe create an issue letting Remix know that their types are a little janky...
+    build: viteDevServer
+      ? () => /** @type {any} */ (viteDevServer.ssrLoadModule("virtual:remix/server-build"))
+      : /** @type {any} */ (await import("./build/server/index.js")),
+  }),
 );
 
 app.listen(port, () => {
   console.log(`Express server listening on port ${port}`);
-  if (process.env.NODE_ENV === "development") broadcastDevReady(initialBuild);
 });
-
-/** @returns {Promise<import("@remix-run/node").ServerBuild>} */
-async function reimportServer() {
-  const stat = fs.statSync(BUILD_PATH);
-  const buildUrl = url.pathToFileURL(BUILD_PATH).href; // Used for Windows compatibility with dynamic `import`
-
-  // Use a timestamp query parameter to bust the `import` cache.
-  return import(`${buildUrl}?t=${stat.mtimeMs}`);
-}
-
-/**
- * @param {import("@remix-run/node").ServerBuild} firstBuild The {@link initialBuild} generated in this file.
- * @returns {Promise<import('@remix-run/express').RequestHandler>}
- */
-async function createDevRequestHandler(firstBuild) {
-  let build = firstBuild;
-  const chokidar = await import("chokidar");
-  chokidar.watch(VERSION_PATH, { ignoreInitial: true }).on("add", handleServerUpdate).on("change", handleServerUpdate);
-
-  // Wrap request handler to make sure it's recreated with the latest build for every request
-  return async (req, res, next) => {
-    try {
-      const getLoadContext = () => ({ ...res.locals });
-      return createRequestHandler({ build, mode: "development", getLoadContext })(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  async function handleServerUpdate() {
-    // 1. Re-import the server build
-    build = await reimportServer();
-
-    // 2. Tell Remix that this app server is now up-to-date and ready
-    broadcastDevReady(build);
-  }
-}
 
 /* -------------------- Our Own Helpers/Functions -------------------- */
 /**

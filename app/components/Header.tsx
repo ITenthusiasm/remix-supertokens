@@ -4,7 +4,7 @@ import React from "react";
 import type { ReactElement, ComponentProps } from "react";
 
 // Styles
-export { default as headerStyles } from "~/styles/components/Header.css";
+export { default as headerStyles } from "~/styles/components/Header.css?url";
 
 interface HeaderProps {
   authenticated?: boolean;

@@ -11,8 +11,8 @@ import { validateEmail, validatePassword } from "~/utils/validation";
 import { commonRoutes } from "~/utils/constants";
 
 // Styles
-import authFormStyles from "~/styles/shared/auth-form.css";
-import styles from "~/styles/routes/login.css";
+import authFormStyles from "~/styles/shared/auth-form.css?url";
+import styles from "~/styles/routes/login.css?url";
 
 /* -------------------- Browser -------------------- */
 export default function LoginPage() {
