@@ -122,7 +122,6 @@ export default function ResetPassword() {
       <Form ref={formRef} method="post" onSubmit={handleSubmit}>
         <h1>Reset your password</h1>
         <h2>We will send you an email to reset your password</h2>
-        {errors?.banner && <div role="alert">{errors?.banner}</div>}
 
         <label htmlFor="email">Email</label>
         <input
