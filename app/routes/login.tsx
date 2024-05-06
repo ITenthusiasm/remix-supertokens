@@ -2,8 +2,8 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
-import { useEffect, useMemo } from "react";
-import { useFormValidityObserver } from "@form-observer/react";
+import { useState, useEffect, useMemo } from "react";
+import { createFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
 import { createHeadersFromTokens } from "~/utils/supertokens/cookieHelpers.server";
@@ -17,25 +17,22 @@ import styles from "~/styles/routes/login.css?url";
 /* -------------------- Browser -------------------- */
 export default function LoginPage() {
   const { mode } = useLoaderData<LoaderData>();
-  const errors = useActionData<ActionData>();
+  const serverErrors = useActionData<ActionData>();
+  const [errors, setErrors] = useState(serverErrors);
+  useEffect(() => setErrors(serverErrors), [serverErrors]); // Keep server/client errors in sync
+  useEffect(() => setErrors(undefined), [mode]); // Clear errors when authentication mode changes
 
   // Manage form errors.
-  const { autoObserve, configure, setFieldError, clearFieldError } = useFormValidityObserver("focusout");
   const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
-
-  useEffect(() => {
-    const form = document.querySelector("form") as HTMLFormElement;
-    Array.prototype.forEach.call(form.elements, (field: HTMLInputElement) => {
-      const message = errors?.[field.name as keyof typeof errors];
-      return message == null ? clearFieldError(field.name) : setFieldError(field.name, message);
+  const { autoObserve, configure } = useMemo(() => {
+    return createFormValidityObserver("focusout", {
+      renderByDefault: true,
+      renderer(errorContainer, errorMessage) {
+        const fieldName = errorContainer.id.replace(/-error$/, "");
+        setErrors((e) => ({ ...e, [fieldName]: errorMessage }));
+      },
     });
-  }, [errors, setFieldError, clearFieldError]);
-
-  // Clear errors whenever the authentication mode changes.
-  useEffect(() => {
-    clearFieldError("email");
-    clearFieldError("password");
-  }, [mode, clearFieldError]);
+  }, []);
 
   return (
     <main>

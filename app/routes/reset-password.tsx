@@ -2,8 +2,8 @@
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
-import { useEffect, useMemo } from "react";
-import { useFormValidityObserver } from "@form-observer/react";
+import { useState, useEffect, useMemo } from "react";
+import { createFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
 import { validateEmail, validatePassword } from "~/utils/validation";
@@ -15,25 +15,24 @@ import authFormStyles from "~/styles/shared/auth-form.css?url";
 /* -------------------- Browser -------------------- */
 export default function ResetPassword() {
   const { mode, token } = useLoaderData<LoaderData>();
-  const errors = useActionData<ActionData>();
+  const serverErrors = useActionData<ActionData>();
+  const [errors, setErrors] = useState(serverErrors);
+  useEffect(() => setErrors(serverErrors), [serverErrors]); // Keep server/client errors in sync
 
   // Manage form errors.
-  const { autoObserve, configure, setFieldError, clearFieldError, validateField, validateFields } =
-    useFormValidityObserver("focusout");
   const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
+  const { autoObserve, configure, validateField, validateFields } = useMemo(() => {
+    return createFormValidityObserver("focusout", {
+      renderByDefault: true,
+      renderer(errorContainer, errorMessage) {
+        const fieldName = errorContainer.id.replace(/-error$/, "");
+        setErrors((e) => ({ ...e, [fieldName]: errorMessage }));
+      },
+    });
+  }, []);
 
   const formRef = useMemo(autoObserve, [autoObserve]);
   const handleSubmit = (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault());
-
-  useEffect(() => {
-    const form = document.querySelector("form");
-    if (!form) return;
-
-    Array.prototype.forEach.call(form.elements, (field: HTMLInputElement) => {
-      const message = errors?.[field.name as keyof typeof errors];
-      return message == null ? clearFieldError(field.name) : setFieldError(field.name, message);
-    });
-  }, [errors, setFieldError, clearFieldError]);
 
   if (mode === "success") {
     return (
