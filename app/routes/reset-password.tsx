@@ -90,7 +90,7 @@ export default function ResetPassword() {
               required,
               validate(input: HTMLInputElement) {
                 const password = input.form?.elements.namedItem("password") as HTMLInputElement;
-                if (input.value !== password.value) return "Confirmation Password doesn't match";
+                if (input.value !== password.value) return "Confirmation password doesn't match";
               },
             })}
           />
@@ -198,13 +198,13 @@ export const action: ActionFunction = async ({ request, context }) => {
 
     // Validate Data
     const errors: ActionData = {};
-    if (!password) errors.password = "Password is required";
+    if (!password) errors.password = "New password is required";
     else if (!validatePassword(password)) {
       errors.password = "Password must contain at least 8 characters, including a number";
     }
 
-    if (!confirmPassword) errors["confirm-password"] = "Confirmation Password is required";
-    else if (password !== confirmPassword) errors["confirm-password"] = "Confirmation Password doesn't match";
+    if (!confirmPassword) errors["confirm-password"] = "Confirm password is required";
+    else if (password !== confirmPassword) errors["confirm-password"] = "Confirmation password doesn't match";
 
     if (errors.password || errors["confirm-password"]) return json<ActionData>(errors, 400);
 
