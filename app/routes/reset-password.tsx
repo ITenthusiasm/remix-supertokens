@@ -33,7 +33,7 @@ export default function ResetPassword() {
 
   const formRef = useMemo(autoObserve, [autoObserve]);
   const handleSubmit = useCallback(
-    (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault()),
+    (event: React.FormEvent) => (validateFields({ focus: true }) ? undefined : event.preventDefault()),
     [validateFields],
   );
 
