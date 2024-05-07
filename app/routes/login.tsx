@@ -1,8 +1,9 @@
 // Primary imports
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunction, ActionFunction, LinksFunction } from "@remix-run/node";
-import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
-import { useState, useEffect, useMemo } from "react";
+import { Form, Link, useLoaderData, useActionData, useSubmit } from "@remix-run/react";
+import type { FormMethod } from "@remix-run/react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
@@ -24,7 +25,7 @@ export default function LoginPage() {
 
   // Manage form errors.
   const required = (field: ValidatableField) => `${field.labels?.[0].textContent} is required`;
-  const { autoObserve, configure } = useMemo(() => {
+  const { autoObserve, configure, validateFields } = useMemo(() => {
     return createFormValidityObserver("focusout", {
       renderByDefault: true,
       renderer(errorContainer, errorMessage) {
@@ -34,9 +35,22 @@ export default function LoginPage() {
     });
   }, []);
 
+  const submit = useSubmit();
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent): Promise<void> => {
+      // NOTE: Either Remix or React has changed how this handler works. Form must be accessed through `event.target`.
+      event.preventDefault();
+      const form = event.target as HTMLFormElement;
+
+      const success = await validateFields({ focus: true });
+      if (success) return submit(form, { method: form.method as FormMethod });
+    },
+    [submit, validateFields],
+  );
+
   return (
     <main>
-      <Form ref={useMemo(autoObserve, [autoObserve])} method="post">
+      <Form ref={useMemo(autoObserve, [autoObserve])} method="post" onSubmit={handleSubmit}>
         <h1>{`Sign ${mode === "signin" ? "In" : "Up"}`}</h1>
 
         {mode === "signin" ? (
