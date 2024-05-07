@@ -17,7 +17,7 @@ import styles from "~/styles/routes/login.css?url";
 /* -------------------- Browser -------------------- */
 export default function LoginPage() {
   const { mode } = useLoaderData<LoaderData>();
-  const serverErrors = useActionData<ActionData>();
+  const serverErrors = useActionData<typeof action>();
   const [errors, setErrors] = useState(serverErrors);
   useEffect(() => setErrors(serverErrors), [serverErrors]); // Keep server/client errors in sync
   useEffect(() => setErrors(undefined), [mode]); // Clear errors when authentication mode changes
@@ -130,7 +130,7 @@ export const loader: LoaderFunction = async ({ request, context }) => {
 
 type ActionData = undefined | { banner?: string | null; email?: string | null; password?: string | null };
 
-export const action: ActionFunction = async ({ request, context }) => {
+export const action = (async ({ request, context }) => {
   if (context.user?.id) return redirect("/", 303);
 
   // Form Data
@@ -165,5 +165,5 @@ export const action: ActionFunction = async ({ request, context }) => {
   // Auth succeeded
   const headers = createHeadersFromTokens(tokens);
   headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
-  return new Response(null, { status: 303, statusText: "OK", headers });
-};
+  return new Response(null, { status: 303, statusText: "OK", headers }) as never;
+}) satisfies ActionFunction;

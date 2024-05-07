@@ -15,7 +15,7 @@ import authFormStyles from "~/styles/shared/auth-form.css?url";
 /* -------------------- Browser -------------------- */
 export default function ResetPassword() {
   const { mode, token } = useLoaderData<LoaderData>();
-  const serverErrors = useActionData<ActionData>();
+  const serverErrors = useActionData<typeof action>();
   const [errors, setErrors] = useState(serverErrors);
   useEffect(() => setErrors(serverErrors), [serverErrors]); // Keep server/client errors in sync
 
@@ -172,7 +172,7 @@ type ActionData =
       "confirm-password"?: string | null;
     };
 
-export const action: ActionFunction = async ({ request, context }) => {
+export const action = (async ({ request, context }) => {
   if (context.user?.id) return redirect("/", 303);
 
   const formData = await request.formData().then(Object.fromEntries);
@@ -188,7 +188,7 @@ export const action: ActionFunction = async ({ request, context }) => {
     // Email a "reset password" link (or fail silently for invalid users/emails)
     await SuperTokensHelpers.sendPasswordResetEmail(email);
     const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=emailed` });
-    return new Response(null, { status: 303, statusText: "OK", headers });
+    return new Response(null, { status: 303, statusText: "OK", headers }) as never;
   }
 
   // Reset user's password
@@ -218,9 +218,9 @@ export const action: ActionFunction = async ({ request, context }) => {
 
     // Password reset succeeded
     const headers = new Headers({ Location: `${commonRoutes.resetPassword}?mode=success` });
-    return new Response(null, { status: 303, statusText: "OK", headers });
+    return new Response(null, { status: 303, statusText: "OK", headers }) as never;
   }
 
   // Fallthrough
-  return json({ error: "Invalid Request" }, 400);
-};
+  throw json({ error: "Invalid Request" }, 400);
+}) satisfies ActionFunction;
