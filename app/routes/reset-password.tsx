@@ -2,7 +2,7 @@
 import { json, redirect } from "@remix-run/node";
 import type { LinksFunction, LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Form, Link, useLoaderData, useActionData } from "@remix-run/react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createFormValidityObserver } from "@form-observer/react";
 import type { ValidatableField } from "@form-observer/react";
 import SuperTokensHelpers from "~/utils/supertokens/index.server";
@@ -32,7 +32,10 @@ export default function ResetPassword() {
   }, []);
 
   const formRef = useMemo(autoObserve, [autoObserve]);
-  const handleSubmit = (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault());
+  const handleSubmit = useCallback(
+    (event: React.FormEvent) => (validateFields() ? undefined : event.preventDefault()),
+    [validateFields],
+  );
 
   if (mode === "success") {
     return (
