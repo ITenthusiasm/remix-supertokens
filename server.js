@@ -84,8 +84,9 @@ app.all(
     getLoadContext: (_, res) => /** @type {import("@remix-run/node").AppLoadContext} */ ({ ...res.locals }),
     // TODO: Maybe create an issue letting Remix know that their types are a little janky...
     build: viteDevServer
-      ? () => /** @type {any} */ (viteDevServer.ssrLoadModule("virtual:remix/server-build"))
-      : /** @type {any} */ (await import("./build/server/index.js")),
+      ? () => viteDevServer.ssrLoadModule("virtual:remix/server-build")
+      : // @ts-expect-error -- Sometimes the build file won't exist during local development
+        /** @type {any} */ (await import("./build/server/index.js")),
   }),
 );
 

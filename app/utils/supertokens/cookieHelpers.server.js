@@ -5,7 +5,7 @@ import { commonRoutes } from "../constants.js";
 
 /** @typedef {Pick<
   ReturnType<
-    import("supertokens-node/lib/build/recipe/session/types.d.ts")
+    import("supertokens-node/lib/build/recipe/session/types")
       .SessionContainerInterface["getAllSessionTokensDangerously"]
   >, "accessToken" | "refreshToken" | "antiCsrfToken"
 >} Tokens */
