@@ -9,6 +9,7 @@
     "build": "remix vite:build",
     "dev": "node ./server.js",
     "start": "cross-env NODE_ENV=production node ./server.js",
+    "test": "playwright test",
     "lint": "prettier --ignore-path .gitignore --check . && eslint --ignore-path .gitignore . && tsc",
     "format": "prettier --ignore-path .gitignore --write ."
   },
@@ -29,6 +30,8 @@
     "supertokens-node": "^20.0.3"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "@playwright/test": "^1.46.1",
     "@remix-run/dev": "^2.11.2",
     "@remix-run/eslint-config": "^2.11.2",
     "@remix-run/v1-route-convention": "^0.1.4",
