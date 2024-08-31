@@ -1,14 +1,18 @@
 import { test as base, expect } from "@playwright/test";
-import type { Page, Locator, Cookie } from "@playwright/test";
+import type { Page, BrowserContext, Locator, Cookie, Response } from "@playwright/test";
 import { faker } from "@faker-js/faker";
+import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
 
 /* ---------------------------------------- Global Helpers Setup ---------------------------------------- */
+const paths = Object.freeze({ home: "/", login: "/login", refresh: "/auth/session/refresh", private: "/private" });
+
 interface Account {
   email: string;
   password: string;
 }
 
 const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
+  // TODO: Prevent `existingAccount` from causing a Race Condition
   existingAccount: [
     async ({ browser }, use) => {
       // User Info
@@ -44,11 +48,12 @@ const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
 
     // Logout
     await page.goto("/");
-    await page.getByRole("link", { name: /logout/i }).click();
+    const logoutButton = page.getByRole("link", { name: /logout/i });
+    if (await logoutButton.isVisible()) await logoutButton.click();
   },
 });
 
-async function visitSignUpPage(page: Page) {
+async function visitSignUpPage(page: Page): Promise<void> {
   const loginPath = "/login";
   await page.goto(loginPath);
   await page.getByRole("link", { name: /sign up/i }).click();
@@ -56,14 +61,37 @@ async function visitSignUpPage(page: Page) {
   await expect(page.getByRole("heading", { name: /sign up/i, level: 1 })).toBeVisible();
 }
 
+type AuthTokens = { [K in Extract<keyof Tokens, "accessToken" | "refreshToken">]: Cookie };
+
+// TODO: Add JSDocs for this
+async function getAuthTokens(context: BrowserContext, required: false): Promise<Partial<AuthTokens>>;
+async function getAuthTokens(context: BrowserContext, required?: true): Promise<AuthTokens>;
+async function getAuthTokens(context: BrowserContext, required?: boolean): Promise<AuthTokens | Partial<AuthTokens>> {
+  const cookies = await context.cookies();
+  const tokens = {
+    accessToken: cookies.find((c) => c.name === "sAccessToken"),
+    refreshToken: cookies.find((c) => c.name === "sRefreshToken"),
+  };
+
+  if (required) {
+    expect(tokens.accessToken).toEqual(expect.anything());
+    expect(tokens.refreshToken).toEqual(expect.anything());
+  }
+
+  return tokens;
+}
+
 // TODO: Make a global set of variables representing paths (e.g., `loginPath` = `/login`)
 // TODO: Deduplicate whatever other logic you can, such as User Login (where/if necessary)
+// TODO: We should probably be consistent between using `expect(url)` and `page.waitForURL` ...
 /* ---------------------------------------- Tests ---------------------------------------- */
 it.describe("Authenticated Application", () => {
   // TODO: Test with JavaScript BOTH enabled and disabled
   it.use({ javaScriptEnabled: false });
 
   /* -------------------- Setup / Constants -------------------- */
+  // TODO: Consider creating static multipliers for when we want to guarantee token expiration in a test.
+  // Alternatively, just use the static values themselves.
   /** The amount of time after which an access token expires (in `milliseconds`) */
   const accessTokenExpiration = 2 * 1000;
 
@@ -379,6 +407,182 @@ it.describe("Authenticated Application", () => {
       // Attempt to visit Password Reset Page
       await pageWithUser.goto("/reset-password");
       expect(new URL(pageWithUser.url()).pathname).toBe("/");
+    });
+  });
+
+  it.describe("Session Refreshing", () => {
+    async function expectUserToBeUnauthenticated(context: BrowserContext): Promise<void> {
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toBe(undefined);
+      expect(tokens.refreshToken).toBe(undefined);
+    }
+
+    it("Redirects unauthenticated users to the Login Page", async ({ page }) => {
+      await page.goto(paths.refresh);
+      await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
+      expect(new URL(page.url()).pathname).toBe(paths.login);
+    });
+
+    const ProvidesNewTokensWhen = "Gives the user new Auth Tokens when they visit the Session Refresh Route";
+    it(`${ProvidesNewTokensWhen} with Valid Access + Valid Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const originalTokens = await getAuthTokens(context);
+      await pageWithUser.goto(paths.refresh);
+      await pageWithUser.waitForURL(paths.home);
+
+      // Tokens should be different
+      const newTokens = await getAuthTokens(context);
+      expect(newTokens.accessToken).not.toStrictEqual(originalTokens.accessToken);
+      expect(newTokens.refreshToken).not.toStrictEqual(originalTokens.refreshToken);
+
+      // User should still be authenticated
+      await pageWithUser.goto(paths.private);
+      await expect(pageWithUser.getByText("Hello! This page is private!")).toBeVisible();
+    });
+
+    it(`${ProvidesNewTokensWhen} with Expired Access + Valid Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Expire access token (but NOT refresh token)
+      const originalTokens = await getAuthTokens(context);
+      await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+
+      // Attempt token refresh
+      await pageWithUser.goto(paths.refresh);
+      await pageWithUser.waitForURL(paths.home);
+
+      // Tokens should be different
+      const newTokens = await getAuthTokens(context);
+      expect(newTokens.accessToken).not.toStrictEqual(originalTokens.accessToken);
+      expect(newTokens.refreshToken).not.toStrictEqual(originalTokens.refreshToken);
+
+      // User should still be authenticated
+      await pageWithUser.goto(paths.private);
+      await expect(pageWithUser.getByText("Hello! This page is private!")).toBeVisible();
+    });
+
+    const RemovesAuthTokensWhen = "Removes the user's Auth Tokens when they visit the Session Refresh Route";
+    it(`${RemovesAuthTokensWhen} without an Access Token`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const tokens = await getAuthTokens(context);
+      await context.clearCookies({ name: tokens.accessToken.name });
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await expectUserToBeUnauthenticated(context);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
+    });
+
+    it(`${RemovesAuthTokensWhen} with an invalid Access Token`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const tokens = await getAuthTokens(context);
+      await context.clearCookies({ name: tokens.accessToken.name });
+      await context.addCookies([{ ...tokens.accessToken, value: "MUDA_MUDA" }]);
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await expectUserToBeUnauthenticated(context);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
+    });
+
+    it(`${RemovesAuthTokensWhen} with Expired Access + Missing Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const originalTokens = await getAuthTokens(context);
+      await context.clearCookies({ name: originalTokens.refreshToken.name });
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await pageWithUser.waitForURL(paths.login);
+      await expectUserToBeUnauthenticated(context);
+    });
+
+    it(`${RemovesAuthTokensWhen} with Expired Access + Invalid Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const originalTokens = await getAuthTokens(context);
+      await context.clearCookies({ name: originalTokens.refreshToken.name });
+      await context.addCookies([{ ...originalTokens.refreshToken, value: "ORA_ORA_ORA" }]);
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await pageWithUser.waitForURL(paths.login);
+      await expectUserToBeUnauthenticated(context);
+    });
+
+    it(`${RemovesAuthTokensWhen} with Expired Access + Expired Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Expire BOTH access token AND refresh token. Then attempt token refresh.
+      await pageWithUser.waitForTimeout(refreshTokenExpiration * 1.2);
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await pageWithUser.waitForURL(paths.login);
+      await expectUserToBeUnauthenticated(context);
+    });
+
+    it(`${RemovesAuthTokensWhen} with Expired Access + Stolen Refresh Tokens`, async ({ pageWithUser, context }) => {
+      // Attempt token refresh
+      const originalTokens = await getAuthTokens(context);
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be different
+      const newTokens = await getAuthTokens(context);
+      expect(newTokens.accessToken).not.toStrictEqual(originalTokens.accessToken);
+      expect(newTokens.refreshToken).not.toStrictEqual(originalTokens.refreshToken);
+
+      // User should still be authenticated
+      await pageWithUser.goto(paths.private);
+      await expect(pageWithUser.getByText("Hello! This page is private!")).toBeVisible();
+
+      // Attempt refresh again with PREVIOUSLY-USED refresh token
+      expect(originalTokens.refreshToken.name).toBe(newTokens.refreshToken.name);
+      await context.clearCookies({ name: newTokens.refreshToken.name });
+      await context.addCookies([originalTokens.refreshToken]);
+      await pageWithUser.goto(paths.refresh);
+
+      // Tokens should be deleted
+      await pageWithUser.waitForURL(paths.login);
+      await expectUserToBeUnauthenticated(context);
+    });
+
+    it.describe("Automatic Session Refreshing", () => {
+      it("Refreshes the user's session while they interact with secure routes", async ({ pageWithUser, context }) => {
+        // Guarantee that we start on the Home Page
+        await pageWithUser.goto("/");
+        const firstTokens = await getAuthTokens(context);
+
+        // Expire access token (but NOT refresh token). Then visit a secure route.
+        await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+
+        const sessionRefreshed = (r: Response) => new URL(r.url()).pathname === paths.refresh && r.status() === 307;
+        const redirect1 = pageWithUser.waitForResponse(sessionRefreshed);
+
+        await pageWithUser.goto(paths.private);
+        await redirect1;
+
+        // User should have been re-authenticated AND directed to their desired page
+        const secondTokens = await getAuthTokens(context);
+        expect(secondTokens.accessToken).not.toStrictEqual(firstTokens.accessToken);
+        expect(secondTokens.refreshToken).not.toStrictEqual(firstTokens.refreshToken);
+        expect(new URL(pageWithUser.url()).pathname).toBe(paths.private);
+
+        // Expire ONLY access token again. Then perform a `POST` request (via form submission).
+        const text = "This is some test text...";
+        await pageWithUser.getByRole("textbox", { name: /text input/i }).fill(text);
+        await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+
+        const submitter = pageWithUser.getByRole("button", { name: /submit/i });
+        await expect(submitter).toHaveJSProperty("form.method", "post");
+
+        const redirect2 = pageWithUser.waitForResponse(sessionRefreshed);
+        await pageWithUser.getByRole("button", { name: /submit/i }).click();
+        await redirect2;
+
+        // User should have been re-authenticated, AND their form submission should have succeeded.
+        const thirdTokens = await getAuthTokens(context);
+        expect(thirdTokens.accessToken).not.toStrictEqual(secondTokens.accessToken);
+        expect(thirdTokens.refreshToken).not.toStrictEqual(secondTokens.refreshToken);
+
+        // Verify that we got a response back from our form submission
+        expect(new URL(pageWithUser.url()).pathname).toBe(paths.private);
+        await expect(pageWithUser.getByText(JSON.stringify({ text }, null, 2))).toBeVisible();
+      });
     });
   });
 });
