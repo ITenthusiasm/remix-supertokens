@@ -8,7 +8,7 @@ interface Account {
   password: string;
 }
 
-const it = base.extend<{}, { existingAccount: Account }>({
+const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
   existingAccount: [
     async ({ browser }, use) => {
       // User Info
@@ -31,6 +31,21 @@ const it = base.extend<{}, { existingAccount: Account }>({
     },
     { scope: "worker" },
   ],
+  // TODO: Add JSDocs maybe?
+  async pageWithUser({ page, existingAccount }, use) {
+    // Login
+    await page.goto("/login");
+    await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
+    await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
+    await page.getByRole("button", { name: /sign in/i }).click();
+
+    // Expose page after login
+    await use(page);
+
+    // Logout
+    await page.goto("/");
+    await page.getByRole("link", { name: /logout/i }).click();
+  },
 });
 
 async function visitSignUpPage(page: Page) {
@@ -338,53 +353,32 @@ it.describe("Authenticated Application", () => {
 
   it.describe("Authenticated User Management", () => {
     it("Allows authenticated users to interact with secure routes (like the Private Page)", async ({
-      page,
-      existingAccount,
+      pageWithUser,
     }) => {
-      // Login
-      await page.goto("/login");
-      await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
-      await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
-      await page.getByRole("button", { name: /sign in/i }).click();
-
       // Visit Private Page AND submit Form
       const text = "This is some cool text";
-      await page.goto("/private");
-      await page.getByRole("textbox", { name: /text input/i }).fill(text);
-      await page.getByRole("button", { name: /submit/i }).click();
+      await pageWithUser.goto("/private");
+      await pageWithUser.getByRole("textbox", { name: /text input/i }).fill(text);
+      await pageWithUser.getByRole("button", { name: /submit/i }).click();
 
       // Verify that we got a response back from our form submission
-      await expect(page.getByText(JSON.stringify({ text }, null, 2))).toBeVisible();
+      await expect(pageWithUser.getByText(JSON.stringify({ text }, null, 2))).toBeVisible();
     });
 
     it("Prevents authenticated users from visiting the Login Page (because they're already logged in)", async ({
-      page,
-      existingAccount,
+      pageWithUser,
     }) => {
-      // Login
-      await page.goto("/login");
-      await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
-      await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
-      await page.getByRole("button", { name: /sign in/i }).click();
-
       // Attempt to revisit Login Page
-      await page.goto("/login");
-      expect(new URL(page.url()).pathname).toBe("/");
+      await pageWithUser.goto("/login");
+      expect(new URL(pageWithUser.url()).pathname).toBe("/");
     });
 
     it("Prevents authenticated users from visiting the Password Reset Page (because they're already logged in)", async ({
-      page,
-      existingAccount,
+      pageWithUser,
     }) => {
-      // Login
-      await page.goto("/login");
-      await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
-      await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
-      await page.getByRole("button", { name: /sign in/i }).click();
-
       // Attempt to visit Password Reset Page
-      await page.goto("/reset-password");
-      expect(new URL(page.url()).pathname).toBe("/");
+      await pageWithUser.goto("/reset-password");
+      expect(new URL(pageWithUser.url()).pathname).toBe("/");
     });
   });
 });
