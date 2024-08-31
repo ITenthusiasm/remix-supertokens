@@ -110,6 +110,12 @@ it.describe("Authenticated Application", () => {
     await expect(field).toHaveAccessibleDescription("");
   }
 
+  async function expectUserToBeUnauthenticated(context: BrowserContext): Promise<void> {
+    const tokens = await getAuthTokens(context, false);
+    expect(tokens.accessToken).toBe(undefined);
+    expect(tokens.refreshToken).toBe(undefined);
+  }
+
   /* -------------------- Tests -------------------- */
   it.describe("Unauthenticated User Management", () => {
     it("Allows unauthenticated users to visit public pages (like the Home Page)", async ({ page }) => {
@@ -411,12 +417,6 @@ it.describe("Authenticated Application", () => {
   });
 
   it.describe("Session Refreshing", () => {
-    async function expectUserToBeUnauthenticated(context: BrowserContext): Promise<void> {
-      const tokens = await getAuthTokens(context, false);
-      expect(tokens.accessToken).toBe(undefined);
-      expect(tokens.refreshToken).toBe(undefined);
-    }
-
     it("Redirects unauthenticated users to the Login Page", async ({ page }) => {
       await page.goto(paths.refresh);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
@@ -583,6 +583,33 @@ it.describe("Authenticated Application", () => {
         expect(new URL(pageWithUser.url()).pathname).toBe(paths.private);
         await expect(pageWithUser.getByText(JSON.stringify({ text }, null, 2))).toBeVisible();
       });
+    });
+  });
+
+  it.describe("Miscellaneous Auth Requirements", () => {
+    it("Deletes the user's Auth Tokens if they interact with a secure route without a Valid Access Token", async ({
+      pageWithUser,
+      context,
+    }) => {
+      // Attempt to `POST` to a secure route (via a form submission) WITHOUT an Access Token
+      await pageWithUser.goto(paths.private);
+      await pageWithUser.getByRole("textbox", { name: /text input/i }).fill("Some text...");
+
+      const tokens = await getAuthTokens(context);
+      await context.clearCookies({ name: tokens.accessToken.name });
+      await pageWithUser.getByRole("button", { name: /submit/i }).click();
+
+      // Tokens should be deleted
+      await expectUserToBeUnauthenticated(context);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
+
+      // Now attempt to visit a secure route with an Invalid Access Token
+      await context.addCookies([{ ...tokens.accessToken, value: "POWER!" }, tokens.refreshToken]);
+      await pageWithUser.goto(paths.private);
+
+      // Tokens should be deleted again
+      await expectUserToBeUnauthenticated(context);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
     });
   });
 });
