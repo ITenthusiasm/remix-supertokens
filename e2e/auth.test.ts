@@ -4,7 +4,13 @@ import { faker } from "@faker-js/faker";
 import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
 
 /* ---------------------------------------- Global Helpers Setup ---------------------------------------- */
-const paths = Object.freeze({ home: "/", login: "/login", refresh: "/auth/session/refresh", private: "/private" });
+const paths = Object.freeze({
+  home: "/",
+  private: "/private",
+  login: "/login",
+  refresh: "/auth/session/refresh",
+  passwordReset: "/reset-password",
+});
 
 interface Account {
   email: string;
@@ -38,7 +44,7 @@ const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
   // TODO: Add JSDocs maybe?
   async pageWithUser({ page, existingAccount }, use) {
     // Login
-    await page.goto("/login");
+    await page.goto(paths.login);
     await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
     await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
     await page.getByRole("button", { name: /sign in/i }).click();
@@ -47,17 +53,16 @@ const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
     await use(page);
 
     // Logout
-    await page.goto("/");
+    await page.goto(paths.home);
     const logoutButton = page.getByRole("link", { name: /logout/i });
     if (await logoutButton.isVisible()) await logoutButton.click();
   },
 });
 
 async function visitSignUpPage(page: Page): Promise<void> {
-  const loginPath = "/login";
-  await page.goto(loginPath);
+  await page.goto(paths.login);
   await page.getByRole("link", { name: /sign up/i }).click();
-  await page.waitForURL(`${loginPath}?mode=signup`);
+  await page.waitForURL(`${paths.login}?mode=signup`);
   await expect(page.getByRole("heading", { name: /sign up/i, level: 1 })).toBeVisible();
 }
 
@@ -81,7 +86,6 @@ async function getAuthTokens(context: BrowserContext, required?: boolean): Promi
   return tokens;
 }
 
-// TODO: Make a global set of variables representing paths (e.g., `loginPath` = `/login`)
 // TODO: Deduplicate whatever other logic you can, such as User Login (where/if necessary)
 // TODO: We should probably be consistent between using `expect(url)` and `page.waitForURL` ...
 /* ---------------------------------------- Tests ---------------------------------------- */
@@ -119,14 +123,14 @@ it.describe("Authenticated Application", () => {
   /* -------------------- Tests -------------------- */
   it.describe("Unauthenticated User Management", () => {
     it("Allows unauthenticated users to visit public pages (like the Home Page)", async ({ page }) => {
-      await page.goto("/");
+      await page.goto(paths.home);
       await expect(page.getByText("Hello! This page is publicly accessible to anyone and everyone!")).toBeVisible();
     });
 
     it("Redirects unauthenticated users to the Login Page when they visit a secure route", async ({ page }) => {
-      await page.goto("/private");
+      await page.goto(paths.private);
       await expect(page.getByRole("heading", { name: /sign in/i, level: 1 })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe("/login");
+      expect(new URL(page.url()).pathname).toBe(paths.login);
     });
   });
 
@@ -142,13 +146,13 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign up/i }).click();
 
       // Verify existence of access + refresh token
-      await page.waitForURL("/");
+      await page.waitForURL(paths.home);
       const cookies = await context.cookies();
       expect(cookies.some((c) => c.name === "sAccessToken")).toBe(true);
       expect(cookies.some((c) => c.name === "sRefreshToken")).toBe(true);
 
       // Verify access to secure pages
-      await page.goto("/private");
+      await page.goto(paths.private);
       await expect(page.getByText("Hello! This page is private!")).toBeVisible();
     });
 
@@ -233,7 +237,7 @@ it.describe("Authenticated Application", () => {
       await submitter.click();
 
       // Verify existence of access + refresh token
-      await page.waitForURL("/");
+      await page.waitForURL(paths.home);
       const cookies = await context.cookies();
       expect(cookies.some((c) => c.name === "sAccessToken")).toBe(true);
       expect(cookies.some((c) => c.name === "sRefreshToken")).toBe(true);
@@ -258,7 +262,7 @@ it.describe("Authenticated Application", () => {
   it.describe("User Logout", () => {
     it('Logs out the user when they click the `Logout` "button" (link)', async ({ page, context, existingAccount }) => {
       // Login
-      await page.goto("/login");
+      await page.goto(paths.login);
       await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign in/i }).click();
@@ -272,7 +276,7 @@ it.describe("Authenticated Application", () => {
       // Logout
       await logoutButton.click();
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe("/login");
+      expect(new URL(page.url()).pathname).toBe(paths.login);
 
       // Verify absence of access token
       expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(false);
@@ -287,7 +291,7 @@ it.describe("Authenticated Application", () => {
       existingAccount,
     }) => {
       // Login
-      await page.goto("/login");
+      await page.goto(paths.login);
       await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign in/i }).click();
@@ -302,7 +306,7 @@ it.describe("Authenticated Application", () => {
 
       // Logout
       await logoutButton.click();
-      expect(new URL(page.url()).pathname).toBe("/login");
+      expect(new URL(page.url()).pathname).toBe(paths.login);
       expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(false);
       expect((await context.cookies()).some((c) => c.name === "sRefreshToken")).toBe(false);
 
@@ -314,9 +318,9 @@ it.describe("Authenticated Application", () => {
       await page.waitForTimeout(waitTime);
 
       // Attempt to visit a secure route
-      await page.goto("/private");
+      await page.goto(paths.private);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe("/login");
+      expect(new URL(page.url()).pathname).toBe(paths.login);
     });
   });
 
@@ -326,13 +330,13 @@ it.describe("Authenticated Application", () => {
       existingAccount,
     }) => {
       // Login immediately
-      await page.goto("/login");
+      await page.goto(paths.login);
       await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // User should be returned to Home Page
-      expect(new URL(page.url()).pathname).toBe("/");
+      expect(new URL(page.url()).pathname).toBe(paths.home);
     });
 
     it("Returns users to the page they were trying to visit after authentication", async ({
@@ -340,7 +344,7 @@ it.describe("Authenticated Application", () => {
       existingAccount,
     }) => {
       // Unauthenticated user is redirected to auth page
-      const originalPath = "/private";
+      const originalPath = paths.private;
       await page.goto(originalPath);
       await expect(page.getByRole("heading", { name: /sign in/i, level: 1 })).toBeVisible();
 
@@ -354,7 +358,7 @@ it.describe("Authenticated Application", () => {
     });
 
     it("Rejects invalid email-password combinations", async ({ page, existingAccount }) => {
-      await page.goto("/login");
+      await page.goto(paths.login);
       const email = page.getByRole("textbox", { name: /email/i });
       const password = page.getByRole("textbox", { name: /password/i });
       const submitter = page.getByRole("button", { name: /sign in/i });
@@ -380,7 +384,7 @@ it.describe("Authenticated Application", () => {
       await expect(error).not.toBeVisible();
 
       // User is redirected to home page with access to secure routes (like the Private Page)
-      await page.waitForURL("/");
+      await page.waitForURL(paths.home);
       await expect(page.getByRole("link", { name: /private/i })).toBeVisible();
     });
   });
@@ -391,7 +395,7 @@ it.describe("Authenticated Application", () => {
     }) => {
       // Visit Private Page AND submit Form
       const text = "This is some cool text";
-      await pageWithUser.goto("/private");
+      await pageWithUser.goto(paths.private);
       await pageWithUser.getByRole("textbox", { name: /text input/i }).fill(text);
       await pageWithUser.getByRole("button", { name: /submit/i }).click();
 
@@ -403,16 +407,16 @@ it.describe("Authenticated Application", () => {
       pageWithUser,
     }) => {
       // Attempt to revisit Login Page
-      await pageWithUser.goto("/login");
-      expect(new URL(pageWithUser.url()).pathname).toBe("/");
+      await pageWithUser.goto(paths.login);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.home);
     });
 
     it("Prevents authenticated users from visiting the Password Reset Page (because they're already logged in)", async ({
       pageWithUser,
     }) => {
       // Attempt to visit Password Reset Page
-      await pageWithUser.goto("/reset-password");
-      expect(new URL(pageWithUser.url()).pathname).toBe("/");
+      await pageWithUser.goto(paths.passwordReset);
+      expect(new URL(pageWithUser.url()).pathname).toBe(paths.home);
     });
   });
 
@@ -544,7 +548,7 @@ it.describe("Authenticated Application", () => {
     it.describe("Automatic Session Refreshing", () => {
       it("Refreshes the user's session while they interact with secure routes", async ({ pageWithUser, context }) => {
         // Guarantee that we start on the Home Page
-        await pageWithUser.goto("/");
+        await pageWithUser.goto(paths.home);
         const firstTokens = await getAuthTokens(context);
 
         // Expire access token (but NOT refresh token). Then visit a secure route.
