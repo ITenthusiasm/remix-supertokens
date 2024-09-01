@@ -108,13 +108,11 @@ it.describe("Authenticated Application", () => {
   it.use({ javaScriptEnabled: false });
 
   /* -------------------- Setup / Constants -------------------- */
-  // TODO: Consider creating static multipliers for when we want to guarantee token expiration in a test.
-  // Alternatively, just use the static values themselves.
-  /** The amount of time after which an access token expires (in `milliseconds`) */
-  const accessTokenExpiration = 2 * 1000;
+  /** The amount of time after which an access token expires (in `milliseconds`). 2000ms (with a buffer). */
+  const accessTokenExpiration = 2 * 1000 * 1.5;
 
-  /** The amount of time after which a refresh token expires (in `milliseconds`). */
-  const refreshTokenExpiration = accessTokenExpiration * 3;
+  /** The amount of time after which a refresh token expires (in `milliseconds`). 6000ms (with a buffer). */
+  const refreshTokenExpiration = accessTokenExpiration * 3 * 1.2;
 
   /** Asserts that the provided `field` is `aria-invalid`, and that it has the expected error `message` */
   async function expectErrorFor(field: Locator, message: string): Promise<void> {
@@ -327,7 +325,7 @@ it.describe("Authenticated Application", () => {
       // Reapply revoked access token AND wait for expiration
       await context.addCookies([accessToken, refreshToken]);
 
-      const waitTime = accessTokenExpiration * 1.5;
+      const waitTime = accessTokenExpiration;
       expect(waitTime).toBeLessThan(refreshTokenExpiration);
       await page.waitForTimeout(waitTime);
 
@@ -461,7 +459,7 @@ it.describe("Authenticated Application", () => {
     it(`${ProvidesNewTokensWhen} with Expired Access + Valid Refresh Tokens`, async ({ pageWithUser, context }) => {
       // Expire access token (but NOT refresh token)
       const originalTokens = await getAuthTokens(context);
-      await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+      await pageWithUser.waitForTimeout(accessTokenExpiration);
 
       // Attempt token refresh
       await pageWithUser.goto(paths.refresh);
@@ -526,7 +524,7 @@ it.describe("Authenticated Application", () => {
 
     it(`${RemovesAuthTokensWhen} with Expired Access + Expired Refresh Tokens`, async ({ pageWithUser, context }) => {
       // Expire BOTH access token AND refresh token. Then attempt token refresh.
-      await pageWithUser.waitForTimeout(refreshTokenExpiration * 1.2);
+      await pageWithUser.waitForTimeout(refreshTokenExpiration);
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
@@ -566,7 +564,7 @@ it.describe("Authenticated Application", () => {
         const firstTokens = await getAuthTokens(context);
 
         // Expire access token (but NOT refresh token). Then visit a secure route.
-        await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+        await pageWithUser.waitForTimeout(accessTokenExpiration);
 
         const sessionRefreshed = (r: Response) => new URL(r.url()).pathname === paths.refresh && r.status() === 307;
         const redirect1 = pageWithUser.waitForResponse(sessionRefreshed);
@@ -583,7 +581,7 @@ it.describe("Authenticated Application", () => {
         // Expire ONLY access token again. Then perform a `POST` request (via form submission).
         const text = "This is some test text...";
         await pageWithUser.getByRole("textbox", { name: /text input/i }).fill(text);
-        await pageWithUser.waitForTimeout(accessTokenExpiration * 1.5);
+        await pageWithUser.waitForTimeout(accessTokenExpiration);
 
         const submitter = pageWithUser.getByRole("button", { name: /submit/i });
         await expect(submitter).toHaveJSProperty("form.method", "post");
