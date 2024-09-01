@@ -77,7 +77,12 @@ async function visitSignUpPage(page: Page): Promise<void> {
 
 type AuthTokens = { [K in Extract<keyof Tokens, "accessToken" | "refreshToken">]: Cookie };
 
-// TODO: Add JSDocs for this
+/**
+ * Retrieves the Auth Tokens belonging to the current user in the application (if any exist).
+ * @param context The {@link BrowserContext} of the {@link Page} being tested. (Needed to access browser cookies.)
+ * @param required When `true` (default), indicates that all Auth Tokens are expected to exist. If any are missing,
+ * the function will `throw`.
+ */
 async function getAuthTokens(context: BrowserContext, required: false): Promise<Partial<AuthTokens>>;
 async function getAuthTokens(context: BrowserContext, required?: true): Promise<AuthTokens>;
 async function getAuthTokens(context: BrowserContext, required?: boolean): Promise<AuthTokens | Partial<AuthTokens>> {
