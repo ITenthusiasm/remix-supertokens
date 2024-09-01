@@ -17,7 +17,17 @@ interface Account {
   password: string;
 }
 
-const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
+interface TestScopedFixtures {
+  /** Playwright's built-in `page` fixture, with a user already authenticated in the application */
+  pageWithUser: Page;
+}
+
+interface WorkerScopedFixtures {
+  /** The `email` and `password` details of an already-existing account */
+  existingAccount: Account;
+}
+
+const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
   // TODO: Prevent `existingAccount` from causing a Race Condition
   existingAccount: [
     async ({ browser }, use) => {
@@ -41,7 +51,6 @@ const it = base.extend<{ pageWithUser: Page }, { existingAccount: Account }>({
     },
     { scope: "worker" },
   ],
-  // TODO: Add JSDocs maybe?
   async pageWithUser({ page, existingAccount }, use) {
     // Login
     await page.goto(paths.login);
