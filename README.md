@@ -44,13 +44,13 @@ For what it's worth, the well-known web developer, [Kent C. Dodds](https://twitt
 
 There are a few reasons why a custom UI was used in this repository (instead of what SuperTokens provides for the React). To give just a few...
 
-1. **The current solutions that SuperTokens provides require JavaScript**. [^1] _This means that users who disable_ (or for some reason fail to properly download) _the JavaScript necessary for your webpage will be unable login_. Having a custom solution that doesn't require JavaScript for your application to work will improve user experience. Moreoever, it makes Remix easier to integrate with.
+1. **The current solutions that SuperTokens provides require JavaScript**.[^1] _This means that users who disable_ (or for some reason fail to properly download) _the JavaScript necessary for your webpage will be unable login_. Having a custom solution that doesn't require JavaScript for your application to work will improve user experience. Moreoever, it makes Remix easier to integrate with.
 2. **The current solutions that SuperTokens provides is not very [accessible](https://developer.mozilla.org/en-US/docs/Web/Accessibility) (yet)**. A custom solution allows us to make our forms more accessible while we wait for improvements. Note that I am still making improvements on this repo, myself; so suggestions are welcome. Consult the [MDN docs](https://developer.mozilla.org/) for more a11y info. Some example concerns can be found in [SUPERTOKENS_SUGGESTIONS](./SUPERTOKENS_SUGGESTIONS.md).
 3. **By writing out the code from scratch, this repository becomes _far_ more transferrable between frontend frameworks** (especially frameworks that SuperTokens does not yet have example components for).
 4. **A custom solution is easier to add custom styles to via CSS.**
 5. **A custom solution gives you a better idea of what the components provided by SuperTokens do for you** (for those of you who are overly curious like me).
 
-[^1] Almost certainly, these concerns with the components provided by SuperTokens will be resolved in the future. (Part of the point of this repo is to give potential improvement ideas.)
+[^1]: Almost certainly, these concerns with the components provided by SuperTokens will be resolved in the future. (Part of the point of this repo is to give potential improvement ideas.)
 
 ### Why Aren't You Using `supertokens-website` or `supertokens-web-js`?
 
