@@ -3,7 +3,7 @@ import type { Page, BrowserContext, Locator, Cookie, Response } from "@playwrigh
 import { faker } from "@faker-js/faker";
 import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
 
-/* ---------------------------------------- Global Helpers Setup ---------------------------------------- */
+/* ---------------------------------------- Playwright Fixtures ---------------------------------------- */
 const paths = Object.freeze({
   home: "/",
   private: "/private",
@@ -67,6 +67,7 @@ const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
   },
 });
 
+/* ---------------------------------------- Helper Functions ---------------------------------------- */
 async function visitSignUpPage(page: Page): Promise<void> {
   await page.goto(paths.login);
   await page.getByRole("link", { name: /sign up/i }).click();
@@ -99,6 +100,24 @@ async function getAuthTokens(context: BrowserContext, required?: boolean): Promi
   return tokens;
 }
 
+async function expectUserToBeUnauthenticated(context: BrowserContext): Promise<void> {
+  const tokens = await getAuthTokens(context, false);
+  expect(tokens.accessToken).toBe(undefined);
+  expect(tokens.refreshToken).toBe(undefined);
+}
+
+/** Asserts that the provided `field` is `aria-invalid`, and that it has the expected error `message` */
+async function expectErrorFor(field: Locator, message: string): Promise<void> {
+  await expect(field).toHaveAttribute("aria-invalid", String(true));
+  await expect(field).toHaveAccessibleDescription(message);
+}
+
+/** Asserts that the provided `field` is **_not_** `aria-invalid`, and that it has no error message(s) */
+async function expectValidField(field: Locator): Promise<void> {
+  await expect(field).not.toHaveAttribute("aria-invalid", String(true));
+  await expect(field).toHaveAccessibleDescription("");
+}
+
 // TODO: Deduplicate whatever other logic you can, such as User Login (where/if necessary)
 // TODO: We should probably be consistent between using `expect(url)` and `page.waitForURL` ...
 /* ---------------------------------------- Tests ---------------------------------------- */
@@ -114,24 +133,6 @@ it.describe("Authenticated Application", () => {
 
   /** The amount of time after which a refresh token expires (in `milliseconds`). 6000ms (with a buffer). */
   const refreshTokenExpiration = accessTokenExpiration * 3 * 1.2;
-
-  /** Asserts that the provided `field` is `aria-invalid`, and that it has the expected error `message` */
-  async function expectErrorFor(field: Locator, message: string): Promise<void> {
-    await expect(field).toHaveAttribute("aria-invalid", String(true));
-    await expect(field).toHaveAccessibleDescription(message);
-  }
-
-  /** Asserts that the provided `field` is **_not_** `aria-invalid`, and that it has no error message(s) */
-  async function expectValidField(field: Locator): Promise<void> {
-    await expect(field).not.toHaveAttribute("aria-invalid", String(true));
-    await expect(field).toHaveAccessibleDescription("");
-  }
-
-  async function expectUserToBeUnauthenticated(context: BrowserContext): Promise<void> {
-    const tokens = await getAuthTokens(context, false);
-    expect(tokens.accessToken).toBe(undefined);
-    expect(tokens.refreshToken).toBe(undefined);
-  }
 
   /* -------------------- Tests -------------------- */
   it.describe("Unauthenticated User Management", () => {
