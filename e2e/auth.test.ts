@@ -120,7 +120,6 @@ async function expectValidField(field: Locator): Promise<void> {
   await expect(field).toHaveAccessibleDescription("");
 }
 
-// TODO: Deduplicate whatever other logic you can, such as User Login (where/if necessary)
 /* ---------------------------------------- Tests ---------------------------------------- */
 it.describe("Authenticated Application", () => {
   it.describe.configure({ mode: "serial" });
@@ -162,9 +161,9 @@ it.describe("Authenticated Application", () => {
 
       // Verify existence of access + refresh token
       await page.waitForURL(paths.home);
-      const cookies = await context.cookies();
-      expect(cookies.some((c) => c.name === "sAccessToken")).toBe(true);
-      expect(cookies.some((c) => c.name === "sRefreshToken")).toBe(true);
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toEqual(expect.anything());
+      expect(tokens.refreshToken).toEqual(expect.anything());
 
       // Verify access to secure pages
       await page.goto(paths.private);
@@ -253,9 +252,9 @@ it.describe("Authenticated Application", () => {
 
       // Verify existence of access + refresh token
       await page.waitForURL(paths.home);
-      const cookies = await context.cookies();
-      expect(cookies.some((c) => c.name === "sAccessToken")).toBe(true);
-      expect(cookies.some((c) => c.name === "sRefreshToken")).toBe(true);
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toEqual(expect.anything());
+      expect(tokens.refreshToken).toEqual(expect.anything());
     });
 
     it("Requires the provided email not to be associated with an existing account", async ({
@@ -282,8 +281,9 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // Verify existence of access + refresh token
-      expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(true);
-      expect((await context.cookies()).some((c) => c.name === "sRefreshToken")).toBe(true);
+      const originalTokens = await getAuthTokens(context, false);
+      expect(originalTokens.accessToken).toEqual(expect.anything());
+      expect(originalTokens.refreshToken).toEqual(expect.anything());
 
       // Logout
       await page.getByRole("link", { name: /logout/i }).click();
@@ -291,8 +291,9 @@ it.describe("Authenticated Application", () => {
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
 
       // Verify absence of access token
-      expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(false);
-      expect((await context.cookies()).some((c) => c.name === "sRefreshToken")).toBe(false);
+      const newTokens = await getAuthTokens(context, false);
+      expect(newTokens.accessToken).toBe(undefined);
+      expect(newTokens.refreshToken).toBe(undefined);
     });
 
     // NOTE: Testing this use case requires using a REVOKED, EXPIRED Access Token with a VALID Refresh Token.
@@ -333,6 +334,7 @@ it.describe("Authenticated Application", () => {
   it.describe("User Signin", () => {
     it("Enables users with an existing account to login, redirecting them to the home page", async ({
       page,
+      context,
       existingAccount,
     }) => {
       // Login immediately
@@ -341,12 +343,18 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign in/i }).click();
 
+      // User should be authenticated
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toEqual(expect.anything());
+      expect(tokens.refreshToken).toEqual(expect.anything());
+
       // User should be returned to Home Page
       await expect(page).toHaveURL(paths.home);
     });
 
     it("Returns users to the page they were trying to visit after authentication", async ({
       page,
+      context,
       existingAccount,
     }) => {
       // Unauthenticated user is redirected to auth page
@@ -360,11 +368,16 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign in/i }).click();
 
+      // User should be authenticated
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toEqual(expect.anything());
+      expect(tokens.refreshToken).toEqual(expect.anything());
+
       // User should be returned to ORIGINAL path, NOT the Home Page
       await expect(page).toHaveURL(originalPath);
     });
 
-    it("Rejects invalid email-password combinations", async ({ page, existingAccount }) => {
+    it("Rejects invalid email-password combinations", async ({ page, context, existingAccount }) => {
       await page.goto(paths.login);
       const email = page.getByRole("textbox", { name: /email/i });
       const password = page.getByRole("textbox", { name: /password/i });
@@ -390,7 +403,11 @@ it.describe("Authenticated Application", () => {
       await submitter.click();
       await expect(error).not.toBeVisible();
 
-      // User is redirected to home page with access to secure routes (like the Private Page)
+      // User is authenticated and redirected to home page with access to secure routes (like the Private Page)
+      const tokens = await getAuthTokens(context, false);
+      expect(tokens.accessToken).toEqual(expect.anything());
+      expect(tokens.refreshToken).toEqual(expect.anything());
+
       await expect(page).toHaveURL(paths.home);
       await expect(page.getByRole("link", { name: /private/i })).toBeVisible();
     });
