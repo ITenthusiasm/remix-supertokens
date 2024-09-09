@@ -266,7 +266,6 @@ it.describe("Authenticated Application", () => {
 
       // Attempt to sign up with an existing account
       const email = page.getByRole("textbox", { name: /email/i });
-
       await email.fill(existingAccount.email);
       await page.getByRole("textbox", { name: /password/i }).fill(existingAccount.password);
       await page.getByRole("button", { name: /sign up/i }).click();
@@ -283,13 +282,11 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // Verify existence of access + refresh token
-      const logoutButton = page.getByRole("link", { name: /logout/i });
-      await expect(logoutButton).toBeVisible();
       expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(true);
       expect((await context.cookies()).some((c) => c.name === "sRefreshToken")).toBe(true);
 
       // Logout
-      await logoutButton.click();
+      await page.getByRole("link", { name: /logout/i }).click();
       await expect(page).toHaveURL(paths.login);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
 
@@ -355,6 +352,7 @@ it.describe("Authenticated Application", () => {
       // Unauthenticated user is redirected to auth page
       const originalPath = paths.private;
       await page.goto(originalPath);
+      await page.waitForURL((url) => url.pathname === paths.login);
       await expect(page.getByRole("heading", { name: /sign in/i, level: 1 })).toBeVisible();
 
       // Login immediately
@@ -496,7 +494,7 @@ it.describe("Authenticated Application", () => {
       await expectUserToBeUnauthenticated(context);
     });
 
-    it(`${RemovesAuthTokensWhen} with Expired Access + Missing Refresh Tokens`, async ({ pageWithUser, context }) => {
+    it(`${RemovesAuthTokensWhen} with Valid Access + Missing Refresh Tokens`, async ({ pageWithUser, context }) => {
       // Attempt token refresh
       const originalTokens = await getAuthTokens(context);
       await context.clearCookies({ name: originalTokens.refreshToken.name });
@@ -507,7 +505,7 @@ it.describe("Authenticated Application", () => {
       await expectUserToBeUnauthenticated(context);
     });
 
-    it(`${RemovesAuthTokensWhen} with Expired Access + Invalid Refresh Tokens`, async ({ pageWithUser, context }) => {
+    it(`${RemovesAuthTokensWhen} with Valid Access + Invalid Refresh Tokens`, async ({ pageWithUser, context }) => {
       // Attempt token refresh
       const originalTokens = await getAuthTokens(context);
       await context.clearCookies({ name: originalTokens.refreshToken.name });
@@ -529,7 +527,7 @@ it.describe("Authenticated Application", () => {
       await expectUserToBeUnauthenticated(context);
     });
 
-    it(`${RemovesAuthTokensWhen} with Expired Access + Stolen Refresh Tokens`, async ({ pageWithUser, context }) => {
+    it(`${RemovesAuthTokensWhen} with Valid Access + Stolen Refresh Tokens`, async ({ pageWithUser, context }) => {
       // Attempt token refresh
       const originalTokens = await getAuthTokens(context);
       await pageWithUser.goto(paths.refresh);
