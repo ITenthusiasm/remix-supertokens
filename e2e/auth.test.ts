@@ -50,7 +50,7 @@ const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
     },
     { scope: "worker" },
   ],
-  async pageWithUser({ page, existingAccount }, use) {
+  async pageWithUser({ page, context, existingAccount }, use) {
     // Login
     await page.goto(paths.login);
     await page.getByRole("textbox", { name: /email/i }).fill(existingAccount.email);
@@ -64,6 +64,8 @@ const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
     await page.goto(paths.home);
     const logoutButton = page.getByRole("link", { name: /logout/i });
     if (await logoutButton.isVisible()) await logoutButton.click();
+
+    await expectUserToBeUnauthenticated(context);
   },
 });
 
