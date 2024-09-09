@@ -44,3 +44,13 @@ This restricts the name of our route to something less appealling, but it's not 
 Note that this use case is only significant when a token has to be refreshed via browser navigation (e.g., to take care of users who have JS disabled). If you don't need to make session refreshing possible through browser navigation, then an `/auth/session/refresh` page route isn't even necessary. (You don't need browser navigation if you don't care about users who disable or cannot use JS. In that instance, you are guaranteed to have access to the JS `fetch` API on the frontend, and you can just rely on that or on `supertokens-website`.)
 
 Note that this solution requires more careful attention to be given to JS users who are filling out complex forms and need to re-authenticate. However, the concerns here are no different than for JS users who occasionally refresh the page. The best/simplest solution here is `localStorage`, not necessarily `supertokens-website`.
+
+## Testing
+
+### Playwright
+
+- When performing assertions on URLs, follow this convention:
+  - Prefer `expect(page).toHaveURL()` when a test legitimately needs to assert that a page's URL looks correct.
+  - Prefer `page.waitForURL()` when the page's URL is not of primary interest. (For example, after a logout, you may expect to be brought to the Login Page. However, your test might only be interested in performing assertions on the page's auth-related Cookies.)
+  - Prefer `page.waitForURL()` when you want to perform a valid assertion on a page's URL, _but `expect(page).toHaveURL()` will not work_. (This may happen, for example, if you want to perform an assertion only on a page's `pathname`, but not it's `search` portion.)
+  - **_ALWAYS AVOID SYNCHRONOUS ASSERTIONS ON PAGE URLS_**. These are flaky and unreliable (or they require awkward dancing in your tests to be made reliable). Don't do `expect(new URL(page.url()).pathname).toBe(somePath)`. Use the native approaches mentioned earlier instead.

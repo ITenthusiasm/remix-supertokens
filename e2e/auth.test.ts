@@ -73,7 +73,7 @@ const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
 async function visitSignUpPage(page: Page): Promise<void> {
   await page.goto(paths.login);
   await page.getByRole("link", { name: /sign up/i }).click();
-  await page.waitForURL(`${paths.login}?mode=signup`);
+  await expect(page).toHaveURL(`${paths.login}?mode=signup`);
   await expect(page.getByRole("heading", { name: /sign up/i, level: 1 })).toBeVisible();
 }
 
@@ -121,7 +121,6 @@ async function expectValidField(field: Locator): Promise<void> {
 }
 
 // TODO: Deduplicate whatever other logic you can, such as User Login (where/if necessary)
-// TODO: We should probably be consistent between using `expect(url)` and `page.waitForURL` ...
 /* ---------------------------------------- Tests ---------------------------------------- */
 it.describe("Authenticated Application", () => {
   it.describe.configure({ mode: "serial" });
@@ -145,8 +144,8 @@ it.describe("Authenticated Application", () => {
 
     it("Redirects unauthenticated users to the Login Page when they visit a secure route", async ({ page }) => {
       await page.goto(paths.private);
+      await page.waitForURL((url) => url.pathname === paths.login);
       await expect(page.getByRole("heading", { name: /sign in/i, level: 1 })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe(paths.login);
     });
   });
 
@@ -291,8 +290,8 @@ it.describe("Authenticated Application", () => {
 
       // Logout
       await logoutButton.click();
+      await expect(page).toHaveURL(paths.login);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe(paths.login);
 
       // Verify absence of access token
       expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(false);
@@ -313,21 +312,15 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // Grab access + refresh tokens
-      const logoutButton = page.getByRole("link", { name: /logout/i });
-      await expect(logoutButton).toBeVisible();
-
-      const accessToken = (await context.cookies()).find((c) => c.name === "sAccessToken") as Cookie;
-      const refreshToken = (await context.cookies()).find((c) => c.name === "sRefreshToken") as Cookie;
-      expect([accessToken, refreshToken]).toEqual([expect.anything(), expect.anything()]);
+      const tokens = await getAuthTokens(context);
 
       // Logout
-      await logoutButton.click();
-      expect(new URL(page.url()).pathname).toBe(paths.login);
-      expect((await context.cookies()).some((c) => c.name === "sAccessToken")).toBe(false);
-      expect((await context.cookies()).some((c) => c.name === "sRefreshToken")).toBe(false);
+      await page.getByRole("link", { name: /logout/i }).click();
+      await expect(page).toHaveURL(paths.login);
+      await expectUserToBeUnauthenticated(context);
 
       // Reapply revoked access token AND wait for expiration
-      await context.addCookies([accessToken, refreshToken]);
+      await context.addCookies(Object.values(tokens));
 
       const waitTime = accessTokenExpiration;
       expect(waitTime).toBeLessThan(refreshTokenExpiration);
@@ -335,8 +328,8 @@ it.describe("Authenticated Application", () => {
 
       // Attempt to visit a secure route
       await page.goto(paths.private);
+      await page.waitForURL((url) => url.pathname === paths.login);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe(paths.login);
     });
   });
 
@@ -352,7 +345,7 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // User should be returned to Home Page
-      expect(new URL(page.url()).pathname).toBe(paths.home);
+      await expect(page).toHaveURL(paths.home);
     });
 
     it("Returns users to the page they were trying to visit after authentication", async ({
@@ -370,7 +363,7 @@ it.describe("Authenticated Application", () => {
       await page.getByRole("button", { name: /sign in/i }).click();
 
       // User should be returned to ORIGINAL path, NOT the Home Page
-      expect(new URL(page.url()).pathname).toBe(originalPath);
+      await expect(page).toHaveURL(originalPath);
     });
 
     it("Rejects invalid email-password combinations", async ({ page, existingAccount }) => {
@@ -400,7 +393,7 @@ it.describe("Authenticated Application", () => {
       await expect(error).not.toBeVisible();
 
       // User is redirected to home page with access to secure routes (like the Private Page)
-      await page.waitForURL(paths.home);
+      await expect(page).toHaveURL(paths.home);
       await expect(page.getByRole("link", { name: /private/i })).toBeVisible();
     });
   });
@@ -424,7 +417,7 @@ it.describe("Authenticated Application", () => {
     }) => {
       // Attempt to revisit Login Page
       await pageWithUser.goto(paths.login);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.home);
+      await expect(pageWithUser).toHaveURL(paths.home);
     });
 
     it("Prevents authenticated users from visiting the Password Reset Page (because they're already logged in)", async ({
@@ -432,15 +425,15 @@ it.describe("Authenticated Application", () => {
     }) => {
       // Attempt to visit Password Reset Page
       await pageWithUser.goto(paths.passwordReset);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.home);
+      await expect(pageWithUser).toHaveURL(paths.home);
     });
   });
 
   it.describe("Session Refreshing", () => {
     it("Redirects unauthenticated users to the Login Page", async ({ page }) => {
       await page.goto(paths.refresh);
+      await page.waitForURL((url) => url.pathname === paths.login);
       await expect(page.getByRole("heading", { level: 1, name: /sign in/i })).toBeVisible();
-      expect(new URL(page.url()).pathname).toBe(paths.login);
     });
 
     const ProvidesNewTokensWhen = "Gives the user new Auth Tokens when they visit the Session Refresh Route";
@@ -448,7 +441,7 @@ it.describe("Authenticated Application", () => {
       // Attempt token refresh
       const originalTokens = await getAuthTokens(context);
       await pageWithUser.goto(paths.refresh);
-      await pageWithUser.waitForURL(paths.home);
+      await expect(pageWithUser).toHaveURL(paths.home);
 
       // Tokens should be different
       const newTokens = await getAuthTokens(context);
@@ -467,7 +460,7 @@ it.describe("Authenticated Application", () => {
 
       // Attempt token refresh
       await pageWithUser.goto(paths.refresh);
-      await pageWithUser.waitForURL(paths.home);
+      await expect(pageWithUser).toHaveURL(paths.home);
 
       // Tokens should be different
       const newTokens = await getAuthTokens(context);
@@ -487,8 +480,8 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
+      await pageWithUser.waitForURL((url) => url.pathname === paths.login);
       await expectUserToBeUnauthenticated(context);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
     });
 
     it(`${RemovesAuthTokensWhen} with an invalid Access Token`, async ({ pageWithUser, context }) => {
@@ -499,8 +492,8 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
+      await pageWithUser.waitForURL((url) => url.pathname === paths.login);
       await expectUserToBeUnauthenticated(context);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
     });
 
     it(`${RemovesAuthTokensWhen} with Expired Access + Missing Refresh Tokens`, async ({ pageWithUser, context }) => {
@@ -510,7 +503,7 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
-      await pageWithUser.waitForURL(paths.login);
+      await expect(pageWithUser).toHaveURL(paths.login);
       await expectUserToBeUnauthenticated(context);
     });
 
@@ -522,7 +515,7 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
-      await pageWithUser.waitForURL(paths.login);
+      await expect(pageWithUser).toHaveURL(paths.login);
       await expectUserToBeUnauthenticated(context);
     });
 
@@ -532,7 +525,7 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
-      await pageWithUser.waitForURL(paths.login);
+      await expect(pageWithUser).toHaveURL(paths.login);
       await expectUserToBeUnauthenticated(context);
     });
 
@@ -557,7 +550,7 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.goto(paths.refresh);
 
       // Tokens should be deleted
-      await pageWithUser.waitForURL(paths.login);
+      await expect(pageWithUser).toHaveURL(paths.login);
       await expectUserToBeUnauthenticated(context);
     });
 
@@ -580,7 +573,7 @@ it.describe("Authenticated Application", () => {
         const secondTokens = await getAuthTokens(context);
         expect(secondTokens.accessToken).not.toStrictEqual(firstTokens.accessToken);
         expect(secondTokens.refreshToken).not.toStrictEqual(firstTokens.refreshToken);
-        expect(new URL(pageWithUser.url()).pathname).toBe(paths.private);
+        await expect(pageWithUser).toHaveURL(paths.private);
 
         // Expire ONLY access token again. Then perform a `POST` request (via form submission).
         const text = "This is some test text...";
@@ -600,7 +593,7 @@ it.describe("Authenticated Application", () => {
         expect(thirdTokens.refreshToken).not.toStrictEqual(secondTokens.refreshToken);
 
         // Verify that we got a response back from our form submission
-        expect(new URL(pageWithUser.url()).pathname).toBe(paths.private);
+        await expect(pageWithUser).toHaveURL(paths.private);
         await expect(pageWithUser.getByText(JSON.stringify({ text }, null, 2))).toBeVisible();
       });
     });
@@ -620,16 +613,16 @@ it.describe("Authenticated Application", () => {
       await pageWithUser.getByRole("button", { name: /submit/i }).click();
 
       // Tokens should be deleted
+      await pageWithUser.waitForURL((url) => url.pathname === paths.login);
       await expectUserToBeUnauthenticated(context);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
 
       // Now attempt to visit a secure route with an Invalid Access Token
       await context.addCookies([{ ...tokens.accessToken, value: "POWER!" }, tokens.refreshToken]);
       await pageWithUser.goto(paths.private);
 
       // Tokens should be deleted again
+      await pageWithUser.waitForURL((url) => url.pathname === paths.login);
       await expectUserToBeUnauthenticated(context);
-      expect(new URL(pageWithUser.url()).pathname).toBe(paths.login);
     });
   });
 });
