@@ -28,7 +28,6 @@ interface WorkerScopedFixtures {
 }
 
 const it = base.extend<TestScopedFixtures, WorkerScopedFixtures>({
-  // TODO: Prevent `existingAccount` from causing a Race Condition
   existingAccount: [
     async ({ browser }, use) => {
       // User Info
@@ -104,6 +103,8 @@ async function getAuthTokens(context: BrowserContext, required?: boolean): Promi
 // TODO: We should probably be consistent between using `expect(url)` and `page.waitForURL` ...
 /* ---------------------------------------- Tests ---------------------------------------- */
 it.describe("Authenticated Application", () => {
+  it.describe.configure({ mode: "serial" });
+
   // TODO: Test with JavaScript BOTH enabled and disabled
   it.use({ javaScriptEnabled: false });
 
