@@ -35,6 +35,29 @@ const recipeId = "emailpassword";
 const tenantId = "public"; // Default tenantId for `SuperTokens`
 
 const SuperTokensHelpers = {
+  /* -------------------- Session / General Helpers -------------------- */
+  async logout({ accessToken, antiCsrfToken }: TokensForLogout): Promise<void> {
+    const session = await Session.getSessionWithoutRequestResponse(accessToken, antiCsrfToken);
+    return session.revokeSession();
+  },
+
+  async refreshToken({ refreshToken, antiCsrfToken }: TokensForRefresh): Promise<Partial<Tokens>> {
+    try {
+      const session = await Session.refreshSessionWithoutRequestResponse(refreshToken, undefined, antiCsrfToken);
+      return session.getAllSessionTokensDangerously();
+    } catch (error) {
+      if (!Session.Error.isErrorFromSuperTokens(error)) throw error;
+      if (error.payload.sessionHandle) Session.revokeSession(error.payload.sessionHandle);
+      return {};
+    }
+  },
+
+  async emailExists(email: string): Promise<boolean> {
+    const users = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
+    return Boolean(users.length);
+  },
+
+  /* -------------------- EmailPassword Helpers -------------------- */
   async signin(email: string, password: string): Promise<SignInResult> {
     const signinResult = await EmailPassword.signIn(tenantId, email, password);
     if (signinResult.status === "WRONG_CREDENTIALS_ERROR") return { status: signinResult.status };
@@ -53,27 +76,6 @@ const SuperTokensHelpers = {
     const recipeUserId = SuperTokens.convertToRecipeUserId(user.id);
     const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
     return { status, tokens: session.getAllSessionTokensDangerously() };
-  },
-
-  async emailExists(email: string): Promise<boolean> {
-    const users = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
-    return Boolean(users.length);
-  },
-
-  async logout({ accessToken, antiCsrfToken }: TokensForLogout): Promise<void> {
-    const session = await Session.getSessionWithoutRequestResponse(accessToken, antiCsrfToken);
-    return session.revokeSession();
-  },
-
-  async refreshToken({ refreshToken, antiCsrfToken }: TokensForRefresh): Promise<Partial<Tokens>> {
-    try {
-      const session = await Session.refreshSessionWithoutRequestResponse(refreshToken, undefined, antiCsrfToken);
-      return session.getAllSessionTokensDangerously();
-    } catch (error) {
-      if (!Session.Error.isErrorFromSuperTokens(error)) throw error;
-      if (error.payload.sessionHandle) Session.revokeSession(error.payload.sessionHandle);
-      return {};
-    }
   },
 
   // NOTE: Fails silently for unknown emails intentionally
@@ -102,7 +104,7 @@ const SuperTokensHelpers = {
     return status;
   },
 
-  /* ---------- Passwordless ---------- */
+  /* -------------------- Passwordless Helpers  -------------------- */
   async sendPasswordlessInvite(info: PasswordlessEmailInfo | PasswordlessPhoneInfo): Promise<CodeDetails> {
     // Note: Although both `email` and `phoneNumber` are destructured here, only ONE of them should be present.
     const { email, phoneNumber, flow } = info as PasswordlessEmailInfo & PasswordlessPhoneInfo;
