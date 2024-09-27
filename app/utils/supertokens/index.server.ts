@@ -56,8 +56,8 @@ const SuperTokensHelpers = {
   },
 
   async emailExists(email: string): Promise<boolean> {
-    // TODO: Stop using `then` here to avoid generating extra `Promise`s unnecessarily
-    return SuperTokens.listUsersByAccountInfo(tenantId, { email }).then((users) => Boolean(users.length));
+    const users = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
+    return Boolean(users.length);
   },
 
   async logout({ accessToken, antiCsrfToken }: TokensForLogout): Promise<void> {
