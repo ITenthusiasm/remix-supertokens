@@ -7,6 +7,7 @@ import morgan from "morgan";
 // SuperTokens Modules
 import SuperTokens from "supertokens-node";
 import Session from "supertokens-node/recipe/session/index.js";
+import Passwordless from "supertokens-node/recipe/passwordless/index.js";
 import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
 
 // Miscellaneous + Local Modules
@@ -23,7 +24,14 @@ import {
 
 const port = process.env.PORT || 3000;
 
-const publicPages = ["/", commonRoutes.login, commonRoutes.resetPassword, commonRoutes.emailExists];
+const publicPages = [
+  "/",
+  commonRoutes.login,
+  commonRoutes.resetPassword,
+  commonRoutes.emailExists,
+  commonRoutes.loginPasswordless,
+];
+
 const app = express();
 
 /* -------------------- Super Tokens -------------------- */
@@ -40,12 +48,14 @@ SuperTokens.init({
     apiBasePath: process.env.SUPERTOKENS_API_BASE_PATH,
   },
   recipeList: [
+    // Initializes passwordless features
+    Passwordless.init({ contactMethod: "EMAIL_OR_PHONE", flowType: "USER_INPUT_CODE_AND_MAGIC_LINK" }),
+
     EmailPassword.init(), // Initializes signin / signup features
     Session.init(), // Initializes session features
   ],
 });
 
-// Supertokens
 app.use(
   cors({
     origin: process.env.SUPERTOKENS_WEBSITE_DOMAIN,
@@ -53,7 +63,6 @@ app.use(
     credentials: true,
   }),
 );
-
 /* -------------------- End > Super Tokens -------------------- */
 
 // http://expressjs.com/en/advanced/best-practice-security.html#at-a-minimum-disable-x-powered-by-header

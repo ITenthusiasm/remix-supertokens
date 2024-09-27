@@ -1,7 +1,8 @@
 import SuperTokens from "supertokens-node";
 import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
+import Passwordless from "supertokens-node/recipe/passwordless/index.js";
 import Session from "supertokens-node/recipe/session/index.js";
-import type { Tokens } from "~/utils/supertokens/cookieHelpers.server";
+import type { Tokens, CodeDetails } from "~/utils/supertokens/cookieHelpers.server";
 import { commonRoutes } from "~/utils/constants";
 
 type AuthDetails = { tokens: Tokens };
@@ -13,6 +14,19 @@ type SignInResult =
 type SignUpResult =
   | ({ status: "EMAIL_ALREADY_EXISTS_ERROR" } & { [K in keyof AuthDetails]?: undefined })
   | ({ status: "OK" } & AuthDetails);
+
+export type PasswordlessFlow = "link" | "code" | "both";
+type PasswordlessEmailInfo = { email: string; flow: PasswordlessFlow };
+type PasswordlessPhoneInfo = { phoneNumber: string; flow: PasswordlessFlow };
+type PasswordlessCredentials =
+  | (CodeDetails & { userInputCode: string })
+  | (Pick<CodeDetails, "preAuthSessionId"> & { linkCode: string });
+
+type PasswordlessSignInResult =
+  | ({ status: "OK" } & AuthDetails)
+  | ({ status: Exclude<Awaited<ReturnType<typeof Passwordless.consumeCode>>["status"], "OK"> } & {
+      [K in keyof AuthDetails]?: undefined;
+    });
 
 type TokensForLogout = Pick<Tokens, "accessToken" | "antiCsrfToken">;
 type TokensForRefresh = { refreshToken: string; antiCsrfToken?: string };
@@ -42,6 +56,7 @@ const SuperTokensHelpers = {
   },
 
   async emailExists(email: string): Promise<boolean> {
+    // TODO: Stop using `then` here to avoid generating extra `Promise`s unnecessarily
     return SuperTokens.listUsersByAccountInfo(tenantId, { email }).then((users) => Boolean(users.length));
   },
 
@@ -85,6 +100,42 @@ const SuperTokensHelpers = {
   async resetPassword(token: string, newPassword: string): Promise<ResetPasswordStatus> {
     const { status } = await EmailPassword.resetPasswordUsingToken(tenantId, token, newPassword);
     return status;
+  },
+
+  /* ---------- Passwordless ---------- */
+  async sendPasswordlessInvite(info: PasswordlessEmailInfo | PasswordlessPhoneInfo): Promise<CodeDetails> {
+    // Note: Although both `email` and `phoneNumber` are destructured here, only ONE of them should be present.
+    const { email, phoneNumber, flow } = info as PasswordlessEmailInfo & PasswordlessPhoneInfo;
+    if (email != null && phoneNumber != null) {
+      throw new TypeError("You may provide an email OR a phone number, but not both");
+    }
+
+    const { userInputCode, ...code } = await Passwordless.createCode({ email, phoneNumber, tenantId });
+    const link = `${process.env.DOMAIN}${commonRoutes.loginPasswordless}?token=${code.linkCode}`;
+    const communicationChannel = email ? "Email" : "Sms";
+
+    await Passwordless[`send${communicationChannel}`]({
+      email,
+      phoneNumber,
+      tenantId,
+      isFirstFactor: true,
+      type: "PASSWORDLESS_LOGIN",
+      ...code,
+      userInputCode: flow === "link" ? undefined : userInputCode,
+      urlWithLinkCode: flow === "code" ? undefined : link,
+    });
+
+    return code;
+  },
+
+  async passwordlessSignin(credentials: PasswordlessCredentials): Promise<PasswordlessSignInResult> {
+    const result = await Passwordless.consumeCode({ tenantId, ...credentials });
+    const status = result.status;
+    if (status !== "OK") return { status };
+
+    const { recipeUserId } = result;
+    const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
+    return { status, tokens: session.getAllSessionTokensDangerously() };
   },
 };
 

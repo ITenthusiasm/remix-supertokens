@@ -10,8 +10,15 @@ import { commonRoutes } from "../constants.js";
   >, "accessToken" | "refreshToken" | "antiCsrfToken"
 >} Tokens */
 
+/** @typedef {Pick<
+  Awaited<ReturnType<import("supertokens-node/recipe/passwordless")["createCode"]>>, "deviceId" | "preAuthSessionId"
+>} CodeDetails */
+
 /** The `name`s of the `SuperTokens` cookies used throughout the application */
 export const authCookieNames = Object.freeze({ access: "sAccessToken", refresh: "sRefreshToken", csrf: "sAntiCsrf" });
+
+/** The `name`s of the cookies used to store `SuperTokens`'s Passwordless data for a given device */
+export const deviceCookieNames = Object.freeze({ deviceId: "sDeviceId", preAuthSessionId: "sPreAuthSessionId" });
 const oneYearInMilliseconds = 365 * 24 * 60 * 60 * 1000;
 
 /** @satisfies {CookieSettings} */
@@ -64,6 +71,32 @@ export function createHeadersFromTokens(tokens) {
 
   if (!antiCsrfToken) headers.append(headerName, serialize(authCookieNames.csrf, "", deleteCookieSettings));
   else headers.append(headerName, serialize(authCookieNames.csrf, antiCsrfToken, createCookieSettings()));
+
+  return headers;
+}
+
+/**
+ * Generates the HTTP Headers needed to store `SuperTokens`'s Passwordless details for a given user's device
+ * in their browser as cookies. An empty property in the `code` object indicates that its corresponding cookie
+ * should be removed from the browser. For example, if `code` is an empty object, then _all_ of the SuperTokens
+ * cookies related to a device using Passwordless login will be removed.
+ *
+ * @param {Partial<CodeDetails>} code
+ * @returns {Headers}
+ */
+export function createHeadersFromPasswordlessCode(code) {
+  const headers = new Headers();
+  const headerName = "Set-Cookie";
+  const { deviceId, preAuthSessionId } = code;
+
+  if (!deviceId) headers.append(headerName, serialize(deviceCookieNames.deviceId, "", deleteCookieSettings));
+  else headers.append(headerName, serialize(deviceCookieNames.deviceId, deviceId, createCookieSettings()));
+
+  if (!preAuthSessionId) {
+    headers.append(headerName, serialize(deviceCookieNames.preAuthSessionId, "", deleteCookieSettings));
+  } else {
+    headers.append(headerName, serialize(deviceCookieNames.preAuthSessionId, preAuthSessionId, createCookieSettings()));
+  }
 
   return headers;
 }

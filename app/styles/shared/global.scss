@@ -19,7 +19,8 @@ body {
     border-top: 0.3px solid #ddd;
   }
 
-  label {
+  label,
+  :has(> label) {
     font-weight: 600;
     line-height: 24px;
 
@@ -72,4 +73,18 @@ body {
     padding: 0;
     margin: 0;
   }
+}
+
+/* -------------------- Utility Classes -------------------- */
+// These CSS classes are copied from TailwindCSS, until we finally decide to use Tailwind directly in the project.
+.\@flex {
+  display: flex;
+}
+
+.\@justify-between {
+  justify-content: space-between;
+}
+
+.\@items-center {
+  align-items: center;
 }
