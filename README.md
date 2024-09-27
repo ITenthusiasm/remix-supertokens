@@ -19,6 +19,21 @@ If there are any questions, concerns, or ideas for improvement, feel free to rea
      - `SUPERTOKENS_API_DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_API_BASE_PATH` (e.g., `/auth`)
 
+### Using Passwordless Authentication
+
+By default, the application uses the `EmailPassword` recipe provided by SuperTokens for logging in. If you click the `Login` button, you will be directed to the `EmailPassword` login page. If you logout, you will be redirected to that page. If you lack valid credentials and attempt to visit a protected route, you will again be redirected to that page.
+
+To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you will need to navigate to `/passwordless/login` instead of `/login`. Once you login from the `Passwordless` page, the rest of the user experience behaves the same (e.g., visiting protected routes, refreshing your auth session, logging out, etc.). If you prefer `Passwordless`, feel free to change all of the links/redirects from `/login` to `/passwordless/login`. (I know that sounds tedious. In the future, I might create an ENV var that lets you toggle this behavior instead.)
+
+If you have more specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers.
+
+### What Code Do I Actually _Need_?
+
+- If you're using the `EmailPassword` recipe, then you _don't_ need the `passwordless.login.tsx` page (or its dependencies).
+- If you're using the `Passwordless` recipe, then you _don't_ need to worry about the `login.tsx` and `reset-password.tsx` pages (or their dependencies).
+
+Obviously, you can decide how much you care about the (S)CSS files. Besides that, the rest of the code in the codebase should be relevant for you. The (very few) parts that aren't should be obvious.
+
 ## Gotchas
 
 ### Properly Using ESM
