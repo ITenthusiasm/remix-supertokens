@@ -62,7 +62,7 @@ export default function PasswordlessLogin() {
   }
 
   // TODO: Consider implementing a `resend` Link
-  if (mode === "emailed") {
+  if (mode === "messaged") {
     return (
       <main>
         <div className="auth-card">
@@ -146,7 +146,7 @@ export const loader = (async ({ request, context }) => {
 
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
-  let mode: "request" | "code-signin" | "link-signin" | "emailed";
+  let mode: "request" | "code-signin" | "link-signin" | "messaged";
 
   if (token) mode = "link-signin";
   else if (searchParams.has("mode")) mode = searchParams.get("mode") as typeof mode;
@@ -198,7 +198,7 @@ export const action = (async ({ request, context }) => {
     const headers = createHeadersFromPasswordlessCode(code);
 
     const url = new URL(request.url);
-    url.searchParams.set("mode", flow === "link" ? "emailed" : "code-signin");
+    url.searchParams.set("mode", flow === "link" ? "messaged" : "code-signin");
     if (flow === "link") url.searchParams.delete("returnUrl"); // `returnUrl` is no longer relevant in this case
 
     headers.set("Location", `${url.pathname}${url.search}`);
