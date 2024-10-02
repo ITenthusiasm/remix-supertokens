@@ -66,8 +66,8 @@ export default function PasswordlessLogin() {
     return (
       <main>
         <div className="auth-card">
-          <h1>Check Your Email</h1>
-          <p>A link was sent to your email. Use it to log in.</p>
+          <h1>{`Check Your ${contact === "email" ? "Email" : "Phone"}`}</h1>
+          <p>{`A link was sent to your ${contact === "email" ? "email" : "phone"}. Use it to log in.`}</p>
         </div>
       </main>
     );
@@ -79,7 +79,7 @@ export default function PasswordlessLogin() {
       <main>
         <Form ref={formRef} method="post" onSubmit={handleSubmit}>
           <h1>Enter Verification Code</h1>
-          <h2>A verification code was sent to your email</h2>
+          <h2>{`A verification code was sent to your ${contact === "email" ? "email" : "phone"}`}</h2>
 
           <label htmlFor="code">Code</label>
           <input
