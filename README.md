@@ -31,6 +31,22 @@ To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you w
 
 If you have more specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers.
 
+### Using ThirdParty Authentication
+
+Add some notes similar to what's above. (Or maybe combine this section's general information with what's above.)
+
+Helpful GitHub Links:
+
+- https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+- https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
+- https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls
+- https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
+
+(Potentially) Helpful Planning Center Links:
+
+- https://developer.planning.center/docs/#/overview
+- https://developer.planning.center/docs/#/overview/authentication
+
 ### What Code Do I Actually _Need_?
 
 - If you're using the `EmailPassword` recipe, then you _don't_ need the `passwordless.login.tsx` page (or its dependencies).
@@ -39,6 +55,58 @@ If you have more specific questions about how the `Passwordless` recipe works, y
 Obviously, you can decide how much you care about the (S)CSS files. Besides that, the rest of the code in the codebase should be relevant for you. The (very few) parts that aren't should be obvious.
 
 ## Gotchas
+
+### Account Linking
+
+Account Linking is **_not_** supported by this example project (yet). Consequently, if you login to the application with 2 different methods (say, `Passwordless` and `ThirdParty`) which both use the **_same_** User Email, you should not expect the 2 user accounts to be unified/combined. Ideally, most users of your application will only use one method for logging in, so this shouldn't be a significant problem.
+
+Until this feature is supported, you can guard your application from unexpected behavior by only allowing users to use one login method at a time. To help you accomplish this, you can use `SuperTokens.listUsersByAccountInfo` to check for existing accounts related to a user. (For example, you can list all accounts having an `email` that you specify.) You can this check this data to make sure that the user is trying to authenticate with the method that they originally used to sign up. Below is an example of how you could handle this.
+
+<details>
+  <summary>Example of Checking Authentication Method</summary>
+
+```ts
+async function verifyAuthMethod(request: Request): boolean {
+  // Note: If you have already read the `FormData`, then you should pass it to this function as a separate argument.
+  const formData = await request.formData();
+  const { searchParams } = new URL(request.url);
+
+  // For `Passwordless`/`EmailPassword`, you should be able to get this from your form data.
+  // For `ThirdParty`, you need to use `provider.getUserInfo()` to get the email AFTER user is redirected to your app.
+  let email = formData.get("email");
+
+  // Check URL for a Provider ID in case user is coming back from a Provider Redirect (`ThirdParty` only)
+  if (!email) {
+    const providerId = searchParams.get("provider") ?? "";
+    // Note: If necessary, pass a valid `clientType` instead of `undefined`
+    const provider = await ThirdParty.getProvider(tenantId, providerId, undefined);
+
+    const oAuthTokens = await provider.exchangeAuthCodeForOAuthTokens(/* ... Provide any data needed here ... */);
+    const userInfoFromProvider = await provider.getUserInfo({ oAuthTokens });
+    email = userInfoFromProvider.email.id;
+  }
+
+  // If your application logic is correct, this array should always be length `0` or `1`
+  const [user] = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
+
+  // This is an entirely new account
+  if (!user) return true;
+
+  // For `EmailPassword`/`Passwordless`, you can get this from a hidden input in your form.
+  // For `ThirdParty`, you need to use something else, like a Query Parameter when user is redirected to your app.
+  const recipeId = formData.get("recipeId") ?? searchParams.get("recipeId");
+
+  // Again, if your application logic is correct, this array should always be length `0` or `1`
+  const [currentLoginMethod] = user.loginMethods;
+  return currentLoginMethod.recipeId === recipeId;
+}
+```
+
+</details>
+
+You can add to (or subtract from) the above logic according to your needs.
+
+Note that Account Linking is a [paid feature](https://supertokens.com/pricing) in SuperTokens. Consequently, you should expect to be charged if you run tests locally with Account Linking enabled/running.
 
 ### Properly Using ESM
 

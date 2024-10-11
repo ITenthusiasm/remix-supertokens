@@ -1,12 +1,14 @@
 import SuperTokens from "supertokens-node";
 import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
 import Passwordless from "supertokens-node/recipe/passwordless/index.js";
+import ThirdParty from "supertokens-node/recipe/thirdparty";
 import Session from "supertokens-node/recipe/session/index.js";
 import type { Tokens, CodeDetails } from "~/utils/supertokens/cookieHelpers.server";
 import { commonRoutes } from "~/utils/constants";
 
 type AuthDetails = { tokens: Tokens };
 
+// `EmailPassword` Helper Types
 type SignInResult =
   | ({ status: "WRONG_CREDENTIALS_ERROR" } & { [K in keyof AuthDetails]?: undefined })
   | ({ status: "OK" } & AuthDetails);
@@ -15,6 +17,7 @@ type SignUpResult =
   | ({ status: "EMAIL_ALREADY_EXISTS_ERROR" } & { [K in keyof AuthDetails]?: undefined })
   | ({ status: "OK" } & AuthDetails);
 
+// `Passwordless` Helper Types
 export type PasswordlessFlow = "link" | "code" | "both";
 type PasswordlessEmailInfo = { email: string; flow: PasswordlessFlow };
 type PasswordlessPhoneInfo = { phoneNumber: string; flow: PasswordlessFlow };
@@ -22,16 +25,29 @@ type PasswordlessCredentials =
   | (CodeDetails & { userInputCode: string })
   | (Pick<CodeDetails, "preAuthSessionId"> & { linkCode: string });
 
+type BadPasswordlessSignInStatuses = Exclude<Awaited<ReturnType<typeof Passwordless.consumeCode>>["status"], "OK">;
 type PasswordlessSignInResult =
   | ({ status: "OK" } & AuthDetails)
-  | ({ status: Exclude<Awaited<ReturnType<typeof Passwordless.consumeCode>>["status"], "OK"> } & {
-      [K in keyof AuthDetails]?: undefined;
-    });
+  | ({ status: BadPasswordlessSignInStatuses } & { [K in keyof AuthDetails]?: undefined });
 
+// `ThirdParty` Helper Types
+type RedirectDetails = { redirectUrl: string; pkceCodeVerifier?: string };
+type BadThirdPartySignInStatuses = Exclude<
+  Awaited<ReturnType<typeof ThirdParty.manuallyCreateOrUpdateUser>>["status"],
+  "OK"
+>;
+
+type ThirdPartySignInResult =
+  | ({ status: "OK" } & AuthDetails)
+  | ({
+      status: BadThirdPartySignInStatuses | "UNRECOGNIZED_PROVIDER" | "NO_EMAIL_FOUND_FOR_USER" | "EMAIL_NOT_VERIFIED";
+    } & { [K in keyof AuthDetails]?: undefined });
+
+// Misc. Helper Types and Constants
 type TokensForLogout = Pick<Tokens, "accessToken" | "antiCsrfToken">;
 type TokensForRefresh = { refreshToken: string; antiCsrfToken?: string };
 type ResetPasswordStatus = Awaited<ReturnType<(typeof EmailPassword)["resetPasswordUsingToken"]>>["status"];
-const recipeId = "emailpassword";
+const recipeId = "emailpassword"; // TODO: Use this value directly where it's needed
 const tenantId = "public"; // Default tenantId for `SuperTokens`
 
 const SuperTokensHelpers = {
@@ -105,6 +121,7 @@ const SuperTokensHelpers = {
   },
 
   /* -------------------- Passwordless Helpers  -------------------- */
+  // TODO: Should the Device Cookie Details be given a `path` that ONLY matches the Passwordless Login Route?
   async sendPasswordlessInvite(info: PasswordlessEmailInfo | PasswordlessPhoneInfo): Promise<CodeDetails> {
     // Note: Although both `email` and `phoneNumber` are destructured here, only ONE of them should be present.
     const { email, phoneNumber, flow } = info as PasswordlessEmailInfo & PasswordlessPhoneInfo;
@@ -139,6 +156,70 @@ const SuperTokensHelpers = {
     const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
     return { status, tokens: session.getAllSessionTokensDangerously() };
   },
+
+  /* -------------------- ThirdParty Helpers  -------------------- */
+  async getThirdPartyRedirectDetails(providerId: string, returnUrl: string | null): Promise<RedirectDetails | null> {
+    // NOTE: You might need to pass a defined `clientType` to `getProvider` in some cases
+    // SUGGESTION: Ask SuperTokens about making `clientType` optional... That would seem to make more sense
+    const provider = await ThirdParty.getProvider(tenantId, providerId, undefined);
+    if (!provider) return null;
+
+    const { urlWithQueryParams, pkceCodeVerifier } = await provider.getAuthorisationRedirectURL({
+      userContext: undefined as any, // SUGGESTION: `supertokens-node` has to correct their types. (Make Optional)
+      redirectURIOnProviderDashboard: createReturnURLForProvider(providerId, returnUrl),
+    });
+
+    return { redirectUrl: urlWithQueryParams, pkceCodeVerifier };
+  },
+
+  // TODO: Finish Implementing...
+  async thirdPartySignin(
+    providerCredentials: URLSearchParams,
+    pkceCodeVerifier: string | undefined,
+  ): Promise<ThirdPartySignInResult> {
+    // NOTE: You might need to pass a defined `clientType` to `getProvider` in some cases
+    const providerId = providerCredentials.get("provider") ?? "";
+    const provider = await ThirdParty.getProvider(tenantId, providerId, undefined);
+    if (!provider) return { status: "UNRECOGNIZED_PROVIDER" } as const;
+
+    const oAuthTokens = await provider.exchangeAuthCodeForOAuthTokens({
+      userContext: undefined as any, // SUGGESTION: `supertokens-node` has to correct their types. (Make Optional)
+      redirectURIInfo: {
+        pkceCodeVerifier,
+        redirectURIOnProviderDashboard: createReturnURLForProvider(providerId, providerCredentials.get("returnUrl")),
+
+        // SUGGESTION: `supertokens-node` has to correct their types. (Type Should be Record<string, string>)
+        redirectURIQueryParams: Object.fromEntries(providerCredentials),
+      },
+    });
+
+    // SUGGESTION: `supertokens-node` has to correct their types. (Make `userContext` Optional)
+    const userInfoFromProvider = await provider.getUserInfo({ oAuthTokens, userContext: undefined as any });
+    const { thirdPartyUserId, email } = userInfoFromProvider;
+    if (!email) return { status: "NO_EMAIL_FOUND_FOR_USER" } as const;
+    if (!email.isVerified) return { status: "EMAIL_NOT_VERIFIED" } as const;
+
+    const result = await ThirdParty.manuallyCreateOrUpdateUser(
+      tenantId,
+      providerId,
+      thirdPartyUserId,
+      email.id,
+      email.isVerified,
+    );
+
+    const status = result.status;
+    if (status !== "OK") return { status };
+
+    const { recipeUserId } = result;
+    const session = await Session.createNewSessionWithoutRequestResponse(tenantId, recipeUserId);
+    return { status, tokens: session.getAllSessionTokensDangerously() };
+  },
 };
+
+function createReturnURLForProvider(providerId: string, returnUrl?: string | null): string {
+  let url = `${process.env.DOMAIN}${commonRoutes.loginThirdparty}?provider=${providerId}`;
+  if (returnUrl) url += `&returnUrl=${returnUrl}`;
+  return url;
+}
 
 export default SuperTokensHelpers;
