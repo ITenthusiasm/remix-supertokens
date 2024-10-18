@@ -33,17 +33,22 @@ const commonCookieSettings = Object.freeze({
  * Generates the [settings](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes)
  * for a _new_ `SuperTokens` HTTP Cookie
  *
- * @param {keyof typeof authCookieNames} [type] The type of cookie for which the settings are being generated
+ * @param {keyof typeof authCookieNames | "device" | "pkce"} [type] The type of cookie for which settings are generated
  * @returns {CookieSettings}
  */
 export function createCookieSettings(type) {
   const nextYear = new Date(new Date().getTime() + oneYearInMilliseconds);
 
+  let path = "/";
+  if (type === "refresh") path = commonRoutes.refreshSession;
+  else if (type === "device") path = commonRoutes.loginPasswordless;
+  else if (type === "pkce") path = commonRoutes.loginThirdParty;
+
   /*
    * Note: SuperTokens is responsible for enforcing the expiration dates, not the browser. Just make sure
    * that the cookie lives long enough in the browser for SuperTokens to be able to receive it and validate it.
    */
-  return { expires: nextYear, path: type === "refresh" ? commonRoutes.refreshSession : "/", ...commonCookieSettings };
+  return { expires: nextYear, path, ...commonCookieSettings };
 }
 
 /** @satisfies {CookieSettings} */
@@ -90,12 +95,15 @@ export function createHeadersFromPasswordlessCode(code) {
   const { deviceId, preAuthSessionId } = code;
 
   if (!deviceId) headers.append(headerName, serialize(deviceCookieNames.deviceId, "", deleteCookieSettings));
-  else headers.append(headerName, serialize(deviceCookieNames.deviceId, deviceId, createCookieSettings()));
+  else headers.append(headerName, serialize(deviceCookieNames.deviceId, deviceId, createCookieSettings("device")));
 
   if (!preAuthSessionId) {
     headers.append(headerName, serialize(deviceCookieNames.preAuthSessionId, "", deleteCookieSettings));
   } else {
-    headers.append(headerName, serialize(deviceCookieNames.preAuthSessionId, preAuthSessionId, createCookieSettings()));
+    headers.append(
+      headerName,
+      serialize(deviceCookieNames.preAuthSessionId, preAuthSessionId, createCookieSettings("device")),
+    );
   }
 
   return headers;

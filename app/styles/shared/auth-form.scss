@@ -160,5 +160,39 @@ main {
         }
       }
     }
+
+    ul.providers {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      list-style-type: none;
+
+      > li > button[type="submit"] {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        color: black;
+        font-weight: 400;
+        background-color: white;
+        border-color: rgb(221, 221, 221);
+
+        &:focus-visible {
+          outline: none;
+          filter: brightness(0.95);
+        }
+
+        // `ThirdParty` Provider Logo
+        > :is(img, svg):first-child {
+          position: absolute;
+          left: 16px;
+
+          width: auto;
+          height: 20px;
+          object-fit: contain;
+        }
+      }
+    }
   }
 }

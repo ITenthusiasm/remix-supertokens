@@ -23,22 +23,84 @@ If you're interested, there are other versions of this project as well:
      - `SUPERTOKENS_API_DOMAIN` (e.g., `http://localhost:3000`)
      - `SUPERTOKENS_API_BASE_PATH` (e.g., `/auth`)
 
-### Using Passwordless Authentication
+### Using Other Authentication Methods
 
 By default, the application uses the `EmailPassword` recipe provided by SuperTokens for logging in. If you click the `Login` button, you will be directed to the `EmailPassword` login page. If you logout, you will be redirected to that page. If you lack valid credentials and attempt to visit a protected route, you will again be redirected to that page.
 
-To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you will need to navigate to `/passwordless/login` instead of `/login`. Once you login from the `Passwordless` page, the rest of the user experience behaves the same (e.g., visiting protected routes, refreshing your auth session, logging out, etc.). If you prefer `Passwordless`, feel free to change all of the links/redirects from `/login` to `/passwordless/login`. (I know that sounds tedious. In the future, I might create an ENV var that lets you toggle this behavior instead.)
+To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you will need to navigate to `/passwordless/login` instead of `/login`. Once you login from the `Passwordless` page, the rest of the user experience behaves the same (e.g., visiting protected routes, refreshing your auth session, logging out, etc.). If you prefer `Passwordless` authentication, feel free to change all of the links/redirects from `/login` to `/passwordless/login`. (I know that sounds tedious. In the future, I might create an ENV var that lets you toggle this behavior instead.)
 
-If you have more specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers.
+Similar to above, you will need to visit `/thirdparty/login` to authenticate using the _`ThirdParty`_ recipe provided by SuperTokens. Below are some links that can help you get started with different OAuth Providers. (This example repo only uses GitHub.)
+
+- GitHub
+  - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+  - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
+  - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls
+  - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
+
+If you have specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers. For questions about the `ThirdParty` recipe, visit the discussion [here](https://discord.com/channels/603466164219281420/1291145637257150497/1291145637257150497).
 
 ### What Code Do I Actually _Need_?
 
-- If you're using the `EmailPassword` recipe, then you _don't_ need the `passwordless.login.tsx` page (or its dependencies).
-- If you're using the `Passwordless` recipe, then you _don't_ need to worry about the `login.tsx` and `reset-password.tsx` pages (or their dependencies).
+- If you're using the `EmailPassword` recipe, then you _don't_ need the `passwordless.login.tsx` page or the `thirdparty.login.tsx` page (or their dependencies).
+- If you're using the `Passwordless` recipe, then you _don't_ need the `login.tsx`, `reset-password.tsx`, and `thirdparty.login.tsx` pages (or their dependencies).
+- If you're using the `ThirdParty` recipe, then you _don't_ need the `login.tsx`, `reset-password.tsx`, and `passwordless.login.tsx` pages (or their dependencies).
 
-Obviously, you can decide how much you care about the (S)CSS files. Besides that, the rest of the code in the codebase should be relevant for you. The (very few) parts that aren't should be obvious.
+Obviously, you can decide how much you care about the (S)CSS files. Besides that, the rest of the code in the codebase should always be relevant for you. The (very few) parts that aren't should be obvious.
 
 ## Gotchas
+
+### Account Linking
+
+Account Linking is **_not_** supported by this example project (yet). Consequently, if you login to the application with 2 different methods (e.g., `Passwordless` and `ThirdParty`) which both use the **_same_** User Email, then [you should expect 2 **_separate_** accounts to be created](https://discord.com/channels/603466164219281420/1294322847170166896/1294322847170166896). **_These accounts will not be merged._** Ideally, most users of your application will only use one method for authentication; so this shouldn't be a significant problem.
+
+If the idea of creating 2 separate accounts with the same email concerns you, then you can require your users to use only one login method. To help you accomplish this, you can use `SuperTokens.listUsersByAccountInfo` to check for existing accounts related to a user. (For example, you can list all accounts having an `email` that you specify.) You can check this account data to ensure that users logging into your application only authenticate with the method which they originally used to sign up. Below is an example of how you could handle this.
+
+<details>
+  <summary>Example of Checking the Authentication Method</summary>
+
+```ts
+// This function assumes that `EmailPassword`, `Passwordless`, AND `ThirdParty` are all used in the same app.
+async function verifyAuthMethod(request: Request): boolean {
+  // Note: If you have already read the `FormData`, then you should pass it to this function as a separate argument.
+  const formData = await request.formData();
+  const { searchParams } = new URL(request.url);
+
+  // For `Passwordless`/`EmailPassword`, you can get the email from your form data.
+  // For `ThirdParty`, use `provider.getUserInfo()` to get the email AFTER your user is redirected to your app.
+  let email = formData.get("email");
+
+  // Check URL for a Provider ID in case user is coming back from a Provider Redirect (`ThirdParty` only)
+  if (!email) {
+    const providerId = searchParams.get("provider") ?? "";
+    // Note: If necessary, pass a valid `clientType` instead of `undefined`
+    const provider = await ThirdParty.getProvider(tenantId, providerId, undefined);
+
+    const oAuthTokens = await provider.exchangeAuthCodeForOAuthTokens(/* ... Provide any data needed here ... */);
+    const userInfoFromProvider = await provider.getUserInfo({ oAuthTokens });
+    email = userInfoFromProvider.email.id;
+  }
+
+  // If your application logic is correct, this array should always be length `0` or `1`
+  const [user] = await SuperTokens.listUsersByAccountInfo(tenantId, { email });
+
+  // This is an entirely new account. Someone is signing up for the first time.
+  if (!user) return true;
+
+  // For `EmailPassword`/`Passwordless`, you can get this from a hidden input in your form.
+  // For `ThirdParty`, you need to use something else (like a Query Parameter) when the user is redirected to your app.
+  const recipeId = formData.get("recipeId") ?? searchParams.get("recipeId");
+
+  // Again, if your application logic is correct, this array should always be length `0` or `1`
+  const [currentLoginMethod] = user.loginMethods;
+  return currentLoginMethod.recipeId === recipeId;
+}
+```
+
+</details>
+
+You can add to (or subtract from) the above logic according to your needs.
+
+Note that Account Linking is a [paid feature](https://supertokens.com/pricing) in SuperTokens. Consequently, you should expect to be charged if you run tests locally with Account Linking enabled.
 
 ### Properly Using ESM
 

@@ -7,6 +7,7 @@ import morgan from "morgan";
 // SuperTokens Modules
 import SuperTokens from "supertokens-node";
 import Session from "supertokens-node/recipe/session/index.js";
+import ThirdParty from "supertokens-node/recipe/thirdparty/index.js";
 import Passwordless from "supertokens-node/recipe/passwordless/index.js";
 import EmailPassword from "supertokens-node/recipe/emailpassword/index.js";
 
@@ -30,6 +31,7 @@ const publicPages = [
   commonRoutes.resetPassword,
   commonRoutes.emailExists,
   commonRoutes.loginPasswordless,
+  commonRoutes.loginThirdParty,
 ];
 
 const app = express();
@@ -53,6 +55,27 @@ SuperTokens.init({
 
     EmailPassword.init(), // Initializes signin / signup features
     Session.init(), // Initializes session features
+
+    // Initializes ThirdParty auth features
+    ThirdParty.init({
+      signInAndUpFeature: {
+        providers: [
+          {
+            config: {
+              thirdPartyId: "github",
+              requireEmail: true,
+              clients: [
+                {
+                  clientId: /** @type {string} */ (process.env.GITHUB_OAUTH_CLIENT_ID),
+                  clientSecret: /** @type {string} */ (process.env.GITHUB_OAUTH_CLIENT_SECRET),
+                  scope: ["user:email"],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }),
   ],
 });
 
