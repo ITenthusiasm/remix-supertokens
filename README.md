@@ -145,6 +145,10 @@ If you've seen the comments from [@Rich-Harris](https://github.com/Rich-Harris) 
 
 Avoiding the `supertokens-node` middleware ended up being _required_ for me to use HTTPS in my application _and_ get it working with high security in Cloudflare. I'll spare you the details, but there are other edge cases like these where `supertokens-node` middleware just won't work (or won't work well). Thankfully, in `supertokens-node@14`, the SuperTokens team was kind enough to introduce functions that allow you to get authentication working _without_ using their custom middleware. If you're using any kind of SSR framework that leverages progressive enhancement ([SvelteKit](https://kit.svelte.dev/), [Remix](https://remix.run/), [SolidStart](https://start.solidjs.com/), etc.), then you'll want to leverage these functions instead of using the middleware as well.
 
+### Can I Use Multiple Authentication Methods on the Same Page?
+
+Absolutely! This project puts the different authentication methods on different pages. But that is only done to make the server logic on each individual page smaller. You are more than welcome to combine multiple authentication methods on a single page. For example, you could merge the `EmailPassword` Login Page with the `ThirdParty` Login Page. All you need to do is combine the UI Markup and the Server Logic as needed.
+
 ## Security Insights
 
 Although the middleware-free approach gives us many advantages when it comes to using SuperTokens with SSR frameworks, it also gives us a little more responsibility. You'll notice in this app that we have to be intentional about the settings which we use for our HTTP cookies. You don't necessarily need to use the settings that I have (though you _should_ use `HttpOnly` and you _should_ set a strict `Path`), but you should certainly ensure that your settings are the safest that they can be for your application. Here are some resources that may be helpful for you on the matter:
