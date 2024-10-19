@@ -31,11 +31,17 @@ To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you w
 
 Similar to above, you will need to visit `/thirdparty/login` to authenticate using the _`ThirdParty`_ recipe provided by SuperTokens. Below are some links that can help you get started with different OAuth Providers. (This example repo only uses GitHub.)
 
-- GitHub
+- [SuperTokens Custom Provider Docs](https://supertokens.com/docs/thirdpartypasswordless/common-customizations/signup-form/custom-providers#via-oauth-endpoints)
+- [GitHub](https://github.com/)
   - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
   - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app
-  - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls
   - https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
+  - https://github.com/logos
+- [Planning Center](https://www.planningcenter.com/)
+  - https://developer.planning.center/docs/#/overview/
+  - https://developer.planning.center/docs/#/overview/authentication
+  - https://developer.planning.center/docs/#/apps/people/2024-09-12/vertices/email
+  - https://www.planningcenter.com/logos
 
 If you have specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers. For questions about the `ThirdParty` recipe, visit the discussion [here](https://discord.com/channels/603466164219281420/1291145637257150497/1291145637257150497).
 

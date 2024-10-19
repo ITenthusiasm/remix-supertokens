@@ -60,6 +60,7 @@ SuperTokens.init({
     ThirdParty.init({
       signInAndUpFeature: {
         providers: [
+          // Built-in Providers
           {
             config: {
               thirdPartyId: "github",
@@ -69,6 +70,36 @@ SuperTokens.init({
                   clientId: /** @type {string} */ (process.env.GITHUB_OAUTH_CLIENT_ID),
                   clientSecret: /** @type {string} */ (process.env.GITHUB_OAUTH_CLIENT_SECRET),
                   scope: ["user:email"],
+                },
+              ],
+            },
+          },
+          // Custom Providers
+          {
+            config: {
+              thirdPartyId: "planningcenter",
+              requireEmail: true,
+              authorizationEndpoint: "https://api.planningcenteronline.com/oauth/authorize",
+              tokenEndpoint: "https://api.planningcenteronline.com/oauth/token",
+              userInfoEndpoint: "https://api.planningcenteronline.com/people/v2/me/emails?where[primary]=true",
+              userInfoMap: {
+                fromUserInfoAPI: {
+                  userId: "data.0.relationships.person.data.id",
+                  email: "data.0.attributes.address",
+                  emailVerified: "data.0.attributes.primary", // Weak, but the best thing that we can work with
+                },
+                // See: https://github.com/supertokens/supertokens-node/issues/954
+                fromIdTokenPayload: {
+                  userId: undefined,
+                  email: undefined,
+                  emailVerified: undefined,
+                },
+              },
+              clients: [
+                {
+                  clientId: /** @type {string} */ (process.env.PLANNING_CENTER_OAUTH_CLIENT_ID),
+                  clientSecret: /** @type {string} */ (process.env.PLANNING_CENTER_OAUTH_CLIENT_SECRET),
+                  scope: ["people"],
                 },
               ],
             },

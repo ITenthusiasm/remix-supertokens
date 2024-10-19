@@ -33,6 +33,13 @@ export default function ThirdPartyLogin() {
               Continue with GitHub
             </button>
           </li>
+
+          <li>
+            <button name="provider" type="submit" value="planningcenter">
+              {/* TODO: Are we allowed to show a `Planning Center` logo here? */}
+              Continue with Planning Center
+            </button>
+          </li>
         </ul>
       </Form>
     </main>
