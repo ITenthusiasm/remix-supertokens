@@ -6,7 +6,7 @@ import { commonRoutes } from "~/utils/constants";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const cookies = parse(request.headers.get("Cookie") ?? "");
-  const accessToken = cookies[authCookieNames.access];
+  const accessToken = cookies[authCookieNames.access] ?? "";
   const antiCsrfToken = cookies[authCookieNames.csrf];
   await SuperTokensHelpers.logout({ accessToken, antiCsrfToken });
 

@@ -218,8 +218,8 @@ export const action = (async ({ request, context }) => {
 async function attemptSigninWith(request: Request, code: string, link?: boolean) {
   // Get Credentials
   const cookies = parse(request.headers.get("Cookie") ?? "");
-  const deviceId = cookies[deviceCookieNames.deviceId];
-  const preAuthSessionId = cookies[deviceCookieNames.preAuthSessionId];
+  const deviceId = cookies[deviceCookieNames.deviceId] ?? "";
+  const preAuthSessionId = cookies[deviceCookieNames.preAuthSessionId] ?? "";
 
   // Validate Code
   const credentials = link ? { linkCode: code, preAuthSessionId } : { userInputCode: code, deviceId, preAuthSessionId };

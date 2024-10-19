@@ -1,7 +1,7 @@
 import { serialize } from "cookie";
 import { commonRoutes } from "../constants.js";
 
-/** @typedef {Omit<import("cookie").CookieSerializeOptions, "encode">} CookieSettings */
+/** @typedef {Omit<import("cookie").SerializeOptions, "encode">} CookieSettings */
 
 /** @typedef {Pick<
   ReturnType<
