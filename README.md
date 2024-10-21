@@ -25,7 +25,7 @@ If you're interested, there are other versions of this project as well:
 
 ### Using Other Authentication Methods
 
-By default, the application uses the `EmailPassword` recipe provided by SuperTokens for logging in. If you click the `Login` button, you will be directed to the `EmailPassword` login page. If you logout, you will be redirected to that page. If you lack valid credentials and attempt to visit a protected route, you will again be redirected to that page.
+By default, the application uses the `EmailPassword` recipe provided by SuperTokens for logging in. If you click the `Login` button, you will be directed to the `EmailPassword` login page (`/login`). If you logout, you will be redirected to that page. If you lack valid credentials and attempt to visit a protected route, you will again be redirected to that page.
 
 To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you will need to navigate to `/passwordless/login` instead of `/login`. Once you login from the `Passwordless` page, the rest of the user experience behaves the same (e.g., visiting protected routes, refreshing your auth session, logging out, etc.). If you prefer `Passwordless` authentication, feel free to change all of the links/redirects from `/login` to `/passwordless/login`. (I know that sounds tedious. In the future, I might create an ENV var that lets you toggle this behavior instead.)
 
@@ -53,7 +53,7 @@ If you have specific questions about how the `Passwordless` recipe works, you mi
 - If you're using the `Passwordless` recipe, then you _don't_ need the `login.tsx`, `reset-password.tsx`, and `thirdparty.login.tsx` pages (or their dependencies).
 - If you're using the `ThirdParty` recipe, then you _don't_ need the `login.tsx`, `reset-password.tsx`, and `passwordless.login.tsx` pages (or their dependencies).
 
-Obviously, you can decide how much you care about the (S)CSS files. Besides that, the rest of the code in the codebase should always be relevant for you. The (very few) parts that aren't should be obvious.
+Obviously, you can decide how much you care about the (S)CSS files. Beyond that, the rest of the code in the codebase should always be relevant for you. The (very few) parts that aren't should be obvious.
 
 ## Gotchas
 
@@ -83,9 +83,11 @@ async function verifyAuthMethod(request: Request): boolean {
     // Note: If necessary, pass a valid `clientType` instead of `undefined`
     const provider = await ThirdParty.getProvider(tenantId, providerId, undefined);
 
-    const oAuthTokens = await provider.exchangeAuthCodeForOAuthTokens(/* ... Provide any data needed here ... */);
-    const userInfoFromProvider = await provider.getUserInfo({ oAuthTokens });
-    email = userInfoFromProvider.email.id;
+    if (provider) {
+      const oAuthTokens = await provider.exchangeAuthCodeForOAuthTokens(/* ... Provide any data needed here ... */);
+      const userInfoFromProvider = await provider.getUserInfo({ oAuthTokens });
+      email = userInfoFromProvider.email.id;
+    }
   }
 
   // If your application logic is correct, this array should always be length `0` or `1`

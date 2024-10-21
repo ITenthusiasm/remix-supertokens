@@ -88,9 +88,9 @@ export const action = (async ({ request, context }) => {
   if (context.user?.id) throw redirect("/", 303);
 
   const returnUrl = new URL(request.url).searchParams.get("returnUrl");
-  const rawProviderValue = (await request.formData()).get("provider");
-  const provider = typeof rawProviderValue === "string" ? rawProviderValue : "";
-  const redirectDetails = await SuperTokensHelpers.getThirdPartyRedirectDetails(provider, returnUrl);
+  const provider = (await request.formData()).get("provider");
+  const normalizedProvider = typeof provider === "string" ? provider : "";
+  const redirectDetails = await SuperTokensHelpers.getThirdPartyRedirectDetails(normalizedProvider, returnUrl);
 
   // Provider was not recognized. (This should only happen if there is a bug in our code or the user is malicious.)
   if (redirectDetails === null) return json<Errors>({ banner: "Could not authorize with provider" }, 500);
