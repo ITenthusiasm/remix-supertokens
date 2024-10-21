@@ -29,7 +29,7 @@ By default, the application uses the `EmailPassword` recipe provided by SuperTok
 
 To authenticate using the _`Passwordless`_ recipe provided by SuperTokens, you will need to navigate to `/passwordless/login` instead of `/login`. Once you login from the `Passwordless` page, the rest of the user experience behaves the same (e.g., visiting protected routes, refreshing your auth session, logging out, etc.). If you prefer `Passwordless` authentication, feel free to change all of the links/redirects from `/login` to `/passwordless/login`. (I know that sounds tedious. In the future, I might create an ENV var that lets you toggle this behavior instead.)
 
-Similar to above, you will need to visit `/thirdparty/login` to authenticate using the _`ThirdParty`_ recipe provided by SuperTokens. Below are some links that can help you get started with different OAuth Providers. (This example repo only uses GitHub.)
+Similar to above, you will need to visit `/thirdparty/login` to authenticate using the _`ThirdParty`_ recipe provided by SuperTokens. Below are some links that can help you get started with different OAuth Providers.
 
 - [SuperTokens Custom Provider Docs](https://supertokens.com/docs/thirdpartypasswordless/common-customizations/signup-form/custom-providers#via-oauth-endpoints)
 - [GitHub](https://github.com/)
