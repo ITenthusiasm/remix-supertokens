@@ -9,6 +9,7 @@ import {
   createCookieSettings,
   deleteCookieSettings,
 } from "~/utils/supertokens/cookieHelpers.server";
+import { commonRoutes } from "~/utils/constants";
 
 // Styles
 import authFormStyles from "~/styles/shared/auth-form.css?url";
@@ -50,6 +51,7 @@ export const links: LinksFunction = () => [{ rel: "stylesheet", href: authFormSt
 
 /* -------------------- Server -------------------- */
 const pkceCookieName = "sPKCE";
+const deletePkceCookieSettings = { ...deleteCookieSettings, path: commonRoutes.loginThirdParty };
 type Errors = Partial<{ banner: string }>;
 
 export const loader = (async ({ request, context }) => {
@@ -78,7 +80,7 @@ export const loader = (async ({ request, context }) => {
 
   // Auth succeeded. Set auth tokens and clear PKCE data.
   const headers = createHeadersFromTokens(tokens);
-  headers.append("Set-Cookie", serialize(pkceCookieName, "", deleteCookieSettings));
+  headers.append("Set-Cookie", serialize(pkceCookieName, "", deletePkceCookieSettings));
 
   headers.set("Location", searchParams.get("returnUrl") || "/");
   throw new Response(null, { status: 303, statusText: "OK", headers }) as never;

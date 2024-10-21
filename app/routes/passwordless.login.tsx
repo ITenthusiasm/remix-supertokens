@@ -14,6 +14,7 @@ import {
   deleteCookieSettings,
 } from "~/utils/supertokens/cookieHelpers.server";
 import { validateEmail, validatePhone } from "~/utils/validation";
+import { commonRoutes } from "~/utils/constants";
 
 // Styles
 import authFormStyles from "~/styles/shared/auth-form.css?url";
@@ -216,6 +217,8 @@ export const action = (async ({ request, context }) => {
 
 // TODO: SuperTokens seems to `THROW` an error when there's a bad `preAuthSessionId`. This issue has been
 // reported to the SuperTokens team and is unexpected behavior. We'll need to wait for them to supply a fix.
+const deleteDeviceCookieSettings = { ...deleteCookieSettings, path: commonRoutes.loginPasswordless };
+
 async function attemptSigninWith(request: Request, code: string, link?: boolean) {
   // Get Credentials
   const cookies = parse(request.headers.get("Cookie") ?? "");
@@ -234,8 +237,8 @@ async function attemptSigninWith(request: Request, code: string, link?: boolean)
 
   // Auth succeeded. Set auth tokens and clear device data.
   const headers = createHeadersFromTokens(tokens);
-  headers.append("Set-Cookie", serialize(deviceCookieNames.deviceId, "", deleteCookieSettings));
-  headers.append("Set-Cookie", serialize(deviceCookieNames.preAuthSessionId, "", deleteCookieSettings));
+  headers.append("Set-Cookie", serialize(deviceCookieNames.deviceId, "", deleteDeviceCookieSettings));
+  headers.append("Set-Cookie", serialize(deviceCookieNames.preAuthSessionId, "", deleteDeviceCookieSettings));
 
   headers.set("Location", new URL(request.url).searchParams.get("returnUrl") || "/");
   throw new Response(null, { status: 303, statusText: "OK", headers });
