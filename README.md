@@ -43,6 +43,8 @@ Similar to above, you will need to visit `/thirdparty/login` to authenticate usi
   - https://developer.planning.center/docs/#/apps/people/2024-09-12/vertices/email
   - https://www.planningcenter.com/logos
 
+**_Be careful to adhere to the guidelines of your OAuth Providers if you are using their logos on your site._**
+
 If you have specific questions about how the `Passwordless` recipe works, you might be helped by visiting the [Q&A exchange](https://discord.com/channels/603466164219281420/1282820138151968768/1282820138151968768) between some of the developers. For questions about the `ThirdParty` recipe, visit the discussion [here](https://discord.com/channels/603466164219281420/1291145637257150497/1291145637257150497).
 
 ### What Code Do I Actually _Need_?

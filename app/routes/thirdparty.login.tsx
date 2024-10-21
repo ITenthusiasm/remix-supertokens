@@ -36,7 +36,7 @@ export default function ThirdPartyLogin() {
 
           <li>
             <button name="provider" type="submit" value="planningcenter">
-              {/* TODO: Are we allowed to show a `Planning Center` logo here? */}
+              <img src="/logos/planning-center.svg" alt="Planning Center Logo" aria-hidden="true" />
               Continue with Planning Center
             </button>
           </li>
