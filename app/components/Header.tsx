@@ -1,6 +1,6 @@
 // Primary Imports
 import { Link } from "@remix-run/react";
-import React from "react";
+import { Children } from "react";
 import type { ReactElement, ComponentProps } from "react";
 
 // Styles
@@ -18,10 +18,7 @@ function Header({ authenticated = false, children }: HeaderProps): ReactElement 
     <header>
       <nav aria-label="Primary Navigation">
         <ul>
-          {React.Children.map(children, (RemixLink) => {
-            if (RemixLink && RemixLink.type === Link) return <li>{RemixLink}</li>;
-          })}
-
+          {Children.map(children, (c) => (c && c.type === Link ? <li>{c}</li> : null))}
           <li>
             <Link className="auth-button" to={`/${authAction}`}>
               {authAction}
