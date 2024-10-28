@@ -14,7 +14,7 @@ import { commonRoutes } from "../constants.js";
   Awaited<ReturnType<import("supertokens-node/recipe/passwordless")["createCode"]>>, "deviceId" | "preAuthSessionId"
 >} CodeDetails */
 
-/** The `name`s of the `SuperTokens` cookies used throughout the application */
+/** The `name`s of the `SuperTokens` auth cookies used throughout the application */
 export const authCookieNames = Object.freeze({ access: "sAccessToken", refresh: "sRefreshToken", csrf: "sAntiCsrf" });
 
 /** The `name`s of the cookies used to store `SuperTokens`'s Passwordless data for a given device */
