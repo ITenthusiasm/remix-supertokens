@@ -49,8 +49,24 @@ Note that this solution requires more careful attention to be given to JS users 
 
 ### Playwright
 
+#### General Playwright Testing Guidelines
+
 - When performing assertions on URLs, follow this convention:
   - Prefer `expect(page).toHaveURL()` when a test legitimately needs to assert that a page's URL looks correct.
   - Prefer `page.waitForURL()` when the page's URL is not of primary interest. (For example, after a logout, you may expect to be brought to the Login Page. However, your test might only be interested in performing assertions on the page's auth-related Cookies.)
   - Prefer `page.waitForURL()` when you want to perform a valid assertion on a page's URL, _but `expect(page).toHaveURL()` will not work_. (This may happen, for example, if you want to perform an assertion only on a page's `pathname`, but not it's `search` portion.)
   - **_ALWAYS AVOID SYNCHRONOUS ASSERTIONS ON PAGE URLS_**. These are flaky and unreliable (or they require awkward dancing in your tests to be made reliable). Don't do `expect(new URL(page.url()).pathname).toBe(somePath)`. Use the native approaches mentioned earlier instead.
+
+#### Tests Misbehave When Buttons Move _While Being Clicked_
+
+We discovered this phenomenon while trying to test our own forms -- which used error messages that shifted the submitter around.
+
+Apparently, Playwright's ability to correctly order `click` and `focusout` events will be disrupted if Playwright tries to click a _moving_ target. For example, imagine that a form's textfield is currently in focus in a Playwright test. Then imagine that the form's layout _shifts_ when the test user tries to click the submit button, causing the submitter to move out of range of where the click _would have occurred_. (One way that this can happen is if the removal of a field's error message causes a form submitter to be shifted upwards. This is a _bad_ approach to removing error messages.) In this case, the `focusout` and `click` events will likely fire in an incorrect order in Playwright -- causing bugs/errors in tests. But this problem **_won't_** happen if the submit button stays in place the entire time.
+
+This might be odd behavior in Playwright, but it technically forces developers to create better user experiences, which is a good thing. A button _should not_ move while a user is trying to click it.
+
+#### Setting Cookies in Response to Form Submissions
+
+When it comes to servers that set cookies in response to submitted forms, Playwright's overall behavior/experience with cookies for Remix apps seems to vary based on whether or not JS is enabled. (This is likely true for other emerging SSR frameworks as well. It might even be true for all applications in general. It's _at least_ true for SvelteKit as well.) If a&rpar; JS is disabled and b&rpar; a submitted form causes the server to update the user's cookies, then Playwright appears to set those cookies immediately. More accurately, you can perform `await page.click(submitter)` and then immediately check `await context.cookies()` safely to verify the cookie changes. This behavior might be because `<form>`s always cause a (_real_) page navigation to happen -- even if the user is only navigated to the page that they were already on. (This is relevant because it's possible that `await context.cookies()` has to wait for the new page to load first. And by that time, the cookies should already be set in the browser.)
+
+However, the immediate verification of cookies **_does not_** seem to be safe when JS is _enabled_. That is, the immediate verification _does not_ seem to be safe when cookies are updated in response to a `fetch` request instead of a page navigation. In these cases, it seems that the Playwright test needs to _wait_ for the response to be processed _before_ `await context.cookies()` can be safely checked. Please keep this in mind while writing your tests.
