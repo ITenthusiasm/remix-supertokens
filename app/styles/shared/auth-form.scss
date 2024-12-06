@@ -4,7 +4,7 @@ body {
 
 main {
   --label-spacing: 6px;
-  --input-spacing: 34px;
+  --input-spacing: 40px;
   --input-width: 100%;
   --input-height: 34px;
 
@@ -140,13 +140,24 @@ main {
       }
 
       + div[id][role="alert"] {
-        margin-top: calc(10px - var(--input-height));
-        margin-bottom: calc(var(--input-height) - 10px);
+        --error-height: 16px;
+        --field-error-distance: 10px;
 
+        display: none;
+        height: var(--error-height);
         color: #ff1717;
         font-weight: 400;
 
-        animation: spawn-error-message 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        &:not(:empty) {
+          // Introduce an error message that appears `--field-error-distance` units below its corresponding form field
+          // without disrupting the form's layout.
+          display: block;
+          margin-top: calc(var(--field-error-distance) - var(--input-spacing));
+          margin-bottom: calc(var(--input-spacing) - var(--field-error-distance) - var(--error-height));
+
+          animation: spawn-error-message 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+
         @keyframes spawn-error-message {
           from {
             opacity: 0;
