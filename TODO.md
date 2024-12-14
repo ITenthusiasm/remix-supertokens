@@ -14,4 +14,4 @@
       - [ ] `/logout`
       - [x] `/private`
       - [ ] `/reset-password`
-- [ ] **REPLACE** the `SuperTokens` `getAllCORSHeaders` middleware function with an implementation that _does not_ require using middleware if possible. (We need this for things like `SvelteKit` and `SolidStart`).
+- [ ] **REPLACE** the `SuperTokens` `getAllCORSHeaders` middleware function with an implementation that _does not_ require using middleware if possible. (We need this for things like `SvelteKit` and `SolidStart`). (Is this needed?)
